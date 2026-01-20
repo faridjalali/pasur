@@ -75,30 +75,32 @@
         }
 
         /* --- Capture Showcase Containers --- */
-        /* Positioned absolute within each player-row on the RIGHT side */
         .capture-container {
             position: absolute;
-            right: 15px; /* Right side of the deck/row */
+            right: 15px; /* Right side of the row */
+            /* We center the container vertically relative to row */
             top: 50%;
             transform: translateY(-50%);
             width: var(--card-width);
-            height: var(--card-height); 
+            /* Height is auto to allow stack to grow, handled in JS positioning */
+            height: 0; 
             pointer-events: none;
-            z-index: 100; /* Above Surs and Cards */
-            display: none; /* Hidden by default */
+            z-index: 200; /* Very high to float over everything */
+            display: none; 
+            overflow: visible;
         }
 
         .showcase-card {
             position: absolute;
             left: 0;
-            width: 100%;
-            height: 100%;
+            width: var(--card-width);
+            height: var(--card-height);
             background-color: white;
             border-radius: var(--card-radius);
-            border: 1px solid #ccc;
-            /* Shadow to define stack */
-            box-shadow: 0px -2px 5px rgba(0,0,0,0.5); 
-            transition: all 0.2s ease-out;
+            border: 1px solid #999;
+            /* Shadow that casts downwards to show stacking */
+            box-shadow: 0px 2px 5px rgba(0,0,0,0.4); 
+            transition: none;
             transform-origin: top center;
         }
 
@@ -161,13 +163,11 @@
             flex-direction: column;
             align-items: flex-end;
             gap: 2px;
-            /* Ensure Sur area stays behind capture animation */
             z-index: 10; 
             opacity: 1; 
             transition: opacity 0.2s;
         }
         
-        /* Dim Sur area when capture is showing to avoid clutter */
         .sur-area.dimmed {
             opacity: 0.1;
         }
@@ -529,27 +529,33 @@
     function showCaptureAnim(cards, containerId) {
         return new Promise(resolve => {
             const showcase = document.getElementById(containerId);
-            // Hide Sur area temporarily to reduce clutter? 
-            // Or just overlay. Let's dim the Sur area.
             const surId = containerId === 'cpu-showcase' ? 'cpu-sur-area' : 'player-sur-area';
+            
             document.getElementById(surId).classList.add('dimmed');
             
             showcase.innerHTML = '';
             showcase.style.display = 'block';
 
-            // Ultra Compact Stacking
-            // We stack them so Card i+1 is slightly lower than Card i.
-            // Z-Index: Standard stack (bottom card is index 0).
-            // But visually, if index 0 is at Top:0px, index 1 is Top:8px.
-            // Index 1 must cover the body of Index 0. 
-            // So Index 1 needs HIGHER z-index.
+            // Center the stack vertically
+            // Calculate total height to shift it up by half that amount
+            // Height = (N-1)*offset + cardHeight
+            const offset = 12; // 12px visible strip (approx 14% of 84px)
+            const totalH = ((cards.length - 1) * offset) + 84;
             
+            // We use top:50% on container, so we just shift up by half of totalH
+            // But since cards are absolute positioned from 0, we shift the FIRST card up
+            // actually we can just set margin-top on the container
+            showcase.style.marginTop = `-${totalH / 2}px`;
+
             cards.forEach((card, i) => {
                 const el = createCardEl(card);
                 el.classList.add('showcase-card');
                 
-                // Tight offset: 8px
-                el.style.top = (i * 8) + 'px'; 
+                // Stack downwards: i * 12px
+                el.style.top = (i * offset) + 'px'; 
+                
+                // Z-index increases so newer cards (i+1) cover the body of older cards (i)
+                // This creates the "Top 15% visible" effect for card i.
                 el.style.zIndex = 50 + i; 
                 
                 showcase.appendChild(el);
@@ -903,7 +909,7 @@
 
         const tableDiv = document.getElementById('table-area');
         const staticEls = Array.from(tableDiv.children).filter(el => 
-            el.id === 'deck-counter-pill' || el.id === 'capture-showcase'
+            el.id === 'deck-counter-pill'
         );
         tableDiv.innerHTML = '';
         staticEls.forEach(el => tableDiv.appendChild(el));
