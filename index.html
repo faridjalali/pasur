@@ -41,32 +41,73 @@
             display: flex;
             flex-direction: column;
             justify-content: center;
-            /* Increased gap to push hands further away from middle table */
-            gap: 70px; 
+            gap: 70px; /* Generous gap between hands and table */
             padding: 10px;
             position: relative;
         }
 
         /* --- Player/CPU Row Wrappers --- */
         .player-row {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            height: auto; 
-            padding: 0 10px;
             position: relative;
-            z-index: 2;
+            width: 100%;
+            height: 120px; /* Fixed height to contain surs + cards */
+            display: flex;
+            justify-content: center; /* Centers the hand column */
+            align-items: center;
         }
 
-        /* Center Column holding Cards + Surs */
+        /* --- Side Elements (Absolute Positioning) --- */
+        
+        /* Turn Indicator: Static Left */
+        .turn-indicator {
+            position: absolute;
+            left: 20px;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            opacity: 0.3;
+            transition: opacity 0.3s;
+            z-index: 10;
+        }
+        
+        .turn-indicator.active {
+            opacity: 1;
+        }
+
+        .turn-dot {
+            width: 15px;
+            height: 15px;
+            background-color: var(--highlight);
+            border-radius: 50%;
+            box-shadow: 0 0 10px var(--highlight);
+            animation: pulse 1.5s infinite;
+        }
+
+        /* Capture Showcase Anchor: Static Right */
+        .stack-anchor {
+            position: absolute;
+            right: 20px; /* Fixed margin from right side of screen */
+            width: var(--card-width);
+            height: var(--card-height);
+            z-index: 999;
+            pointer-events: none;
+            overflow: visible; 
+            /* Vertically centered in the row */
+            top: 50%;
+            transform: translateY(-50%);
+        }
+
+        /* --- Center Column (Hand + Surs) --- */
         .hand-column {
-            flex: 1;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
             gap: 8px; 
             position: relative;
+            z-index: 5;
         }
 
         /* --- Hand Areas --- */
@@ -75,11 +116,10 @@
             justify-content: center;
             align-items: center;
             height: var(--card-height);
-            width: 100%;
             position: relative;
         }
 
-        /* --- Sur Areas (Horizontal Center) --- */
+        /* --- Sur Areas --- */
         .sur-container {
             display: flex;
             flex-direction: row; 
@@ -87,7 +127,6 @@
             align-items: center;
             gap: 4px; 
             height: 20px;
-            width: 100%;
             transition: opacity 0.2s;
         }
         
@@ -106,19 +145,7 @@
             white-space: nowrap;
         }
 
-        /* --- Capture Showcase Anchors (Right Side) --- */
-        .stack-anchor {
-            position: absolute;
-            right: 0; 
-            top: 50%;
-            transform: translateY(-50%);
-            width: var(--card-width);
-            height: var(--card-height);
-            z-index: 999;
-            pointer-events: none;
-            overflow: visible; 
-        }
-
+        /* --- The Cards in the Stack --- */
         .stacked-card {
             position: absolute !important;
             left: 0 !important;
@@ -152,7 +179,6 @@
         /* --- Deck Counter --- */
         #deck-counter-pill {
             position: absolute;
-            /* Moved further up to match the increased gap */
             top: -50px; 
             left: 50%;
             transform: translateX(-50%);
@@ -166,30 +192,6 @@
             text-transform: uppercase;
             z-index: 5;
             pointer-events: none;
-        }
-
-        /* --- Indicators --- */
-        .turn-indicator {
-            width: 40px;
-            height: 40px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            opacity: 0.3;
-            transition: opacity 0.3s;
-        }
-        
-        .turn-indicator.active {
-            opacity: 1;
-        }
-
-        .turn-dot {
-            width: 15px;
-            height: 15px;
-            background-color: var(--highlight);
-            border-radius: 50%;
-            box-shadow: 0 0 10px var(--highlight);
-            animation: pulse 1.5s infinite;
         }
 
         /* --- Cards --- */
@@ -326,11 +328,9 @@
             <div id="cpu-sur-container" class="sur-container"></div>
             
             <div id="opponent-hand" class="hand-area"></div>
-            
-            <div id="cpu-stack-anchor" class="stack-anchor"></div>
         </div>
 
-        <div style="width:40px"></div>
+        <div id="cpu-stack-anchor" class="stack-anchor"></div>
     </div>
 
     <div id="table-area">
@@ -346,11 +346,9 @@
             <div id="player-hand" class="hand-area"></div>
             
             <div id="player-sur-container" class="sur-container"></div>
-
-            <div id="player-stack-anchor" class="stack-anchor"></div>
         </div>
 
-        <div style="width:40px"></div>
+        <div id="player-stack-anchor" class="stack-anchor"></div>
     </div>
 </div>
 
@@ -545,14 +543,14 @@
             const container = document.getElementById(anchorId);
             const surId = anchorId === 'cpu-stack-anchor' ? 'cpu-sur-container' : 'player-sur-container';
             
-            // Hide Sur area temporarily so it doesn't overlap
             document.getElementById(surId).classList.add('hidden');
             
             container.innerHTML = ''; 
 
-            const OFFSET = 12; // 12px per card visibility
+            // Tight offset: 12px (approx 14% of 84px card height)
+            const OFFSET = 12; 
             
-            // Calculate total height to shift up by half
+            // Re-center calculation
             const totalStackHeight = ((cards.length - 1) * OFFSET) + 84;
             const shiftUp = (totalStackHeight - 84) / 2;
 
