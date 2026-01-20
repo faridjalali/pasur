@@ -59,7 +59,7 @@
         /* --- Side Elements --- */
         .left-panel {
             position: absolute;
-            left: 15px;
+            left: 0; /* Changed from 15px to 0 to shift left by 15px */
             top: 50%;
             transform: translateY(-50%);
             display: flex;
@@ -67,6 +67,7 @@
             align-items: center;
             gap: 8px;
             z-index: 10;
+            width: 50px; /* fixed width to ensure centering within panel */
         }
 
         .turn-indicator {
