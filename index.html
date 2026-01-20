@@ -41,8 +41,8 @@
             display: flex;
             flex-direction: column;
             justify-content: center;
-            /* Increased gap to push hands away from middle table */
-            gap: 40px; 
+            /* Increased gap to push hands further away from middle table */
+            gap: 70px; 
             padding: 10px;
             position: relative;
         }
@@ -52,7 +52,6 @@
             display: flex;
             align-items: center;
             justify-content: space-between;
-            /* Allow height to fit surs + cards */
             height: auto; 
             padding: 0 10px;
             position: relative;
@@ -66,7 +65,7 @@
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            gap: 8px; /* Space between cards and sur pills */
+            gap: 8px; 
             position: relative;
         }
 
@@ -83,10 +82,10 @@
         /* --- Sur Areas (Horizontal Center) --- */
         .sur-container {
             display: flex;
-            flex-direction: row; /* Horizontal stack */
+            flex-direction: row; 
             justify-content: center;
             align-items: center;
-            gap: 4px; /* Tight gap */
+            gap: 4px; 
             height: 20px;
             width: 100%;
             transition: opacity 0.2s;
@@ -110,7 +109,7 @@
         /* --- Capture Showcase Anchors (Right Side) --- */
         .stack-anchor {
             position: absolute;
-            right: 0; /* Locked to the right side of the central column area */
+            right: 0; 
             top: 50%;
             transform: translateY(-50%);
             width: var(--card-width);
@@ -153,8 +152,8 @@
         /* --- Deck Counter --- */
         #deck-counter-pill {
             position: absolute;
-            /* Move higher relative to table to respect gap */
-            top: -30px; 
+            /* Moved further up to match the increased gap */
+            top: -50px; 
             left: 50%;
             transform: translateX(-50%);
             background: rgba(0, 0, 0, 0.3);
@@ -241,12 +240,11 @@
 
         /* --- Controls --- */
         #controls {
-            height: 120px; /* Taller area */
+            height: 120px; 
             display: flex;
             justify-content: center;
-            align-items: flex-start; /* Align top */
+            align-items: flex-start; 
             gap: 15px;
-            /* Pushed up button by reducing padding relative to height */
             padding-bottom: calc(50px + var(--safe-bottom));
             flex-shrink: 0;
         }
@@ -254,7 +252,6 @@
         .btn-wrapper {
             display: inline-block;
             position: relative;
-            /* Negative margin to pull button up further if needed */
             margin-top: -10px; 
         }
 
@@ -916,11 +913,10 @@
         document.getElementById('deck-counter-pill').textContent = `Deck: ${deck.length}`;
 
         const tableDiv = document.getElementById('table-area');
-        const staticEls = Array.from(tableDiv.children).filter(el => 
-            el.id === 'deck-counter-pill' || el.id === 'capture-showcase'
-        );
-        tableDiv.innerHTML = '';
-        staticEls.forEach(el => tableDiv.appendChild(el));
+        // Clear children but avoid removing the pill
+        Array.from(tableDiv.children).forEach(child => {
+            if (child.id !== 'deck-counter-pill') child.remove();
+        });
 
         table.forEach((card, idx) => {
             const el = createCardEl(card);
