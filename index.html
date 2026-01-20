@@ -35,11 +35,13 @@
             touch-action: none; 
         }
 
+        /* Wrapper to center content vertically */
         #game-board {
             flex: 1;
             display: flex;
             flex-direction: column;
-            justify-content: space-between;
+            justify-content: center; /* Centers the 3 rows vertically */
+            gap: 15px; /* Control gap between rows */
             padding: 10px;
             position: relative;
         }
@@ -48,10 +50,54 @@
             display: flex;
             align-items: center;
             justify-content: space-between;
-            height: 110px;
+            height: 100px; /* Slightly tighter height */
             padding: 0 10px;
+            flex-shrink: 0;
         }
 
+        /* --- Deck Counter --- */
+        #deck-counter-pill {
+            align-self: center;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 11px;
+            color: rgba(255, 255, 255, 0.8);
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            margin-top: -5px;
+            margin-bottom: -5px;
+        }
+
+        /* --- Table Area (Restricted Height) --- */
+        #table-area {
+            flex: none; /* Stop it from expanding to fill space */
+            height: 25vh; /* Fixed relative height (approx 25% of screen) */
+            min-height: 180px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            display: flex;
+            flex-wrap: wrap;
+            align-content: center;
+            justify-content: center;
+            padding: 10px;
+            gap: 8px;
+            position: relative;
+            transition: height 0.3s;
+        }
+
+        /* --- Hand Areas --- */
+        .hand-area {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            height: 100%;
+        }
+
+        /* --- Turn & Sur Indicators --- */
         .turn-indicator {
             width: 40px;
             height: 40px;
@@ -96,32 +142,10 @@
             margin-bottom: 2px;
         }
 
-        .hand-area {
-            flex: 1;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            position: relative;
-            height: 100%;
-        }
-
+        /* --- Cards --- */
         #opponent-hand .card {
             background: linear-gradient(135deg, #a83232 0%, #7d1e1e 100%);
             border: 2px solid #fff;
-        }
-
-        #table-area {
-            flex: 1;
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 12px;
-            margin: 10px 0;
-            display: flex;
-            flex-wrap: wrap;
-            align-content: center;
-            justify-content: center;
-            padding: 10px;
-            gap: 8px;
-            position: relative;
         }
 
         .card {
@@ -164,14 +188,16 @@
             box-shadow: 0 0 0 3px #00e5ff;
         }
 
+        /* --- Controls --- */
         #controls {
             height: 80px;
             display: flex;
             justify-content: center;
             align-items: center;
             gap: 15px;
+            /* Padding bottom handles safe area */
             padding-bottom: calc(20px + env(safe-area-inset-bottom, 0px));
-            position: relative;
+            flex-shrink: 0;
         }
 
         .btn-wrapper {
@@ -237,7 +263,7 @@
 <body>
 
 <div id="game-board">
-    <div class="player-row" style="margin-top: 10px;">
+    <div class="player-row">
         <div class="turn-indicator" id="cpu-turn-icon">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#ffd700" stroke-width="2">
                 <rect x="2" y="2" width="20" height="20" rx="5"></rect>
@@ -252,6 +278,8 @@
             <div id="cpu-sur-container"></div>
         </div>
     </div>
+
+    <div id="deck-counter-pill">Deck: 52</div>
 
     <div id="table-area"></div>
 
@@ -395,7 +423,6 @@
 
     // --- Core Logic ---
     function canCardPickUpAny(card, currentTable) {
-        // Jack can pick up ANY card if table is not empty
         if (card.rank === 'J') return currentTable.length > 0;
         
         if (card.rank === 'K') return currentTable.some(c => c.rank === 'K');
@@ -421,7 +448,7 @@
     }
 
     function validateMove(card, selectedTableCards, allTableCards) {
-        // JACK LOGIC: If Jack, and table has cards, it's a Sweep.
+        // JACK SWEEP
         if (card.rank === 'J') {
             if (allTableCards.length > 0) {
                 return { isValid: true, isPickup: true, special: 'JACK_SWEEP' };
@@ -470,7 +497,6 @@
 
         if (v.isPickup) {
             if (v.special === 'JACK_SWEEP') {
-                // Jack takes EVERYTHING
                 playerPile.push(card, ...table);
                 table = [];
             } else {
@@ -755,6 +781,8 @@
             sp.textContent = 'SUR';
             cSurCont.appendChild(sp);
         }
+
+        document.getElementById('deck-counter-pill').textContent = `Deck: ${deck.length}`;
 
         const tableDiv = document.getElementById('table-area');
         tableDiv.innerHTML = '';
