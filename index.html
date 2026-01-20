@@ -74,14 +74,14 @@
             z-index: 1;
         }
 
-        /* --- Capture Showcase (Tight Stack) --- */
+        /* --- Capture Showcase (Ultra Compact) --- */
         #capture-showcase {
             position: absolute;
             width: var(--card-width);
             top: 50%;
-            transform: translateY(-50%);
+            /* Transformation handled in JS to account for dynamic height */
             pointer-events: none;
-            z-index: 50;
+            z-index: 100;
             display: none; 
         }
         
@@ -96,10 +96,14 @@
         .showcase-card {
             position: absolute;
             left: 0;
-            /* Strong shadow to define the stack edges */
-            box-shadow: 0px -2px 4px rgba(0,0,0,0.5); 
+            box-shadow: 0px -1px 4px rgba(0,0,0,0.4); 
             transition: all 0.2s ease-out;
             transform-origin: top center;
+            background-color: white;
+            border-radius: var(--card-radius);
+            width: 100%;
+            height: 100%;
+            border: 1px solid #ddd;
         }
 
         /* --- Deck Counter --- */
@@ -521,28 +525,29 @@
             showcase.className = side; 
             showcase.style.display = 'block';
 
-            // Vertical offset to calculate center of mass adjustment if needed,
-            // but for simplicity we pin top card at y=0, next at y=20...
-            // If we have many cards, we clamp height.
+            // DYNAMIC COMPRESSION
+            // Standard compact spacing: 12px
+            // If we have many cards (e.g. 8+), compress to 8px
+            let spacing = 12;
+            if (cards.length > 6) spacing = 8;
             
+            const totalHeight = (cards.length - 1) * spacing + 84; 
+            
+            // Adjust top margin to center the stack based on its total height
+            showcase.style.height = totalHeight + 'px';
+            showcase.style.marginTop = -(totalHeight / 2) + 'px'; // Center properly
+            showcase.style.top = '50%'; // Reset from center logic
+            showcase.style.transform = 'none';
+
             cards.forEach((card, i) => {
                 const el = createCardEl(card);
                 el.classList.add('showcase-card');
                 
-                // Tight offset: 20px - just enough to see rank/suit
-                el.style.top = (i * 20) + 'px'; 
-                // Stack order: First item in array is at bottom of stack visually?
-                // Standard: item 0 is top, item 1 is below it.
-                // To achieve "Card on top of card", the next card (i+1) must have higher z-index
-                // AND be positioned lower.
+                el.style.top = (i * spacing) + 'px'; 
                 el.style.zIndex = i + 50; 
                 
                 showcase.appendChild(el);
             });
-            
-            // Re-center vertical based on count
-            const totalHeight = (cards.length - 1) * 20 + 84; // 84 is card height
-            showcase.style.height = totalHeight + 'px';
 
             isPaused = true;
             updateUI(); 
@@ -550,7 +555,6 @@
             setTimeout(() => {
                 showcase.style.display = 'none';
                 showcase.innerHTML = '';
-                showcase.style.height = 'auto';
                 isPaused = false;
                 resolve();
             }, 1500);
