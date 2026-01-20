@@ -147,7 +147,7 @@
             letter-spacing: 0.5px;
             white-space: nowrap;
             position: relative; 
-            transition: opacity 0.3s; /* Smooth fade */
+            transition: opacity 0.3s;
         }
 
         .hidden-pill {
@@ -309,7 +309,7 @@
             opacity: 0.5;
         }
 
-        /* --- Round Over Modal Styling --- */
+        /* --- Round Over Modal --- */
         #message-overlay {
             position: absolute;
             top: 50%;
@@ -353,14 +353,8 @@
             align-items: center;
         }
         
-        /* Custom scrollbar for mini cards */
-        .mini-cards-container::-webkit-scrollbar {
-            height: 4px;
-        }
-        .mini-cards-container::-webkit-scrollbar-thumb {
-            background: #555;
-            border-radius: 2px;
-        }
+        .mini-cards-container::-webkit-scrollbar { height: 4px; }
+        .mini-cards-container::-webkit-scrollbar-thumb { background: #555; border-radius: 2px; }
 
         .mini-card {
             width: 24px;
@@ -536,7 +530,6 @@
     }
 
     function nextRound() {
-        // If button says New Game, we reset total scores
         const btn = document.getElementById('msg-btn');
         if (btn.textContent === "New Game") {
             playerTotalScore = 0;
@@ -545,8 +538,9 @@
         
         document.getElementById('message-overlay').style.display = 'none';
         
-        // Show pills again
+        // Show all counters again
         document.querySelectorAll('.info-pill').forEach(el => el.classList.remove('hidden-pill'));
+        document.querySelectorAll('.sur-container').forEach(el => el.classList.remove('hidden'));
         
         initGame();
     }
@@ -588,10 +582,11 @@
 
     // --- Scoring Logic ---
     function calculateScore() {
-        // 1. Hide UI Pills
+        // Hide info pills and sur pills
         document.querySelectorAll('.info-pill').forEach(el => el.classList.add('hidden-pill'));
+        document.querySelectorAll('.sur-container').forEach(el => el.classList.add('hidden'));
 
-        // 2. Filter Cards for logic
+        // Filter Cards for logic
         const pClubs = playerPile.filter(c => c.suit === '♣');
         const cClubs = cpuPile.filter(c => c.suit === '♣');
         
@@ -599,17 +594,13 @@
         let cRoundPoints = 0;
 
         // Clubs Majority (7 points)
-        let clubWinner = null;
         if (pClubs.length > cClubs.length) {
             pRoundPoints += 7;
-            clubWinner = 'player';
         } else if (cClubs.length > pClubs.length) {
             cRoundPoints += 7;
-            clubWinner = 'cpu';
         }
 
-        // Special Cards Logic
-        // Ace = 1, Jack = 1, 10♦ = 3, 2♣ = 2
+        // Special Cards
         const getSpecials = (pile) => pile.filter(c => 
             c.rank === 'A' || c.rank === 'J' || 
             (c.rank === '10' && c.suit === '♦') || 
@@ -619,7 +610,6 @@
         const pSpecials = getSpecials(playerPile);
         const cSpecials = getSpecials(cpuPile);
 
-        // Helper to calculate points from array
         const sumPoints = (cards) => cards.reduce((acc, c) => {
             if (c.rank === 'A' || c.rank === 'J') return acc + 1;
             if (c.rank === '10' && c.suit === '♦') return acc + 3;
@@ -634,16 +624,15 @@
         pRoundPoints += (playerSurs * 5);
         cRoundPoints += (cpuSurs * 5);
 
-        // 3. Update Total Scores & UI Side
+        // Update Totals
         playerTotalScore += pRoundPoints;
         cpuTotalScore += cRoundPoints;
         document.getElementById('player-total-score').textContent = `Score: ${playerTotalScore}`;
         document.getElementById('cpu-total-score').textContent = `Score: ${cpuTotalScore}`;
 
-        // 4. Build Modal HTML
+        // Build Modal HTML
         const body = document.getElementById('msg-body');
         
-        // Helper to render mini cards
         const renderMini = (card) => {
             const colorClass = (card.suit === '♥' || card.suit === '♦') ? 'red' : 'black';
             return `<div class="mini-card ${colorClass}">${card.rank}${card.suit}</div>`;
@@ -656,31 +645,30 @@
 
         let html = '';
 
-        // --- Clubs Section ---
+        // --- CLUBS ---
         html += `<div class="breakdown-row">`;
-        html += `<div class="breakdown-title">Clubs (You: ${pClubs.length} vs CPU: ${cClubs.length})</div>`;
-        html += `<div style="font-size:10px; color:#aaa; margin-bottom:2px;">Your Clubs:</div>`;
+        html += `<div class="breakdown-title">CLUBS</div>`;
+        html += `<div style="font-size:10px; color:#aaa; margin-bottom:2px;">You: ${pClubs.length}</div>`;
         html += renderRow(pClubs);
-        html += `<div style="font-size:10px; color:#aaa; margin:4px 0 2px;">CPU Clubs:</div>`;
+        html += `<div style="font-size:10px; color:#aaa; margin:4px 0 2px;">CPU: ${cClubs.length}</div>`;
         html += renderRow(cClubs);
-        html += `<div class="score-line"><span>Result:</span> <span class="score-val">${clubWinner === 'player' ? 'You (+7)' : (clubWinner === 'cpu' ? 'CPU (+7)' : 'Tie (0)')}</span></div>`;
         html += `</div>`;
 
-        // --- Specials Section ---
+        // --- SPECIAL CARDS ---
         html += `<div class="breakdown-row">`;
-        html += `<div class="breakdown-title">Special Cards</div>`;
-        html += `<div style="font-size:10px; color:#aaa;">You (${sumPoints(pSpecials)} pts):</div>`;
+        html += `<div class="breakdown-title">SPECIAL CARDS</div>`;
+        html += `<div style="font-size:10px; color:#aaa;">You: ${sumPoints(pSpecials)}</div>`;
         html += renderRow(pSpecials);
-        html += `<div style="font-size:10px; color:#aaa; margin-top:4px;">CPU (${sumPoints(cSpecials)} pts):</div>`;
+        html += `<div style="font-size:10px; color:#aaa; margin-top:4px;">CPU: ${sumPoints(cSpecials)}</div>`;
         html += renderRow(cSpecials);
         html += `</div>`;
 
-        // --- Surs Section ---
+        // --- SURS ---
         if (playerSurs > 0 || cpuSurs > 0) {
             html += `<div class="breakdown-row">`;
-            html += `<div class="breakdown-title">Surs (+5 each)</div>`;
-            html += `<div class="score-line"><span>You: ${playerSurs}</span> <span class="score-val">+${playerSurs*5}</span></div>`;
-            html += `<div class="score-line"><span>CPU: ${cpuSurs}</span> <span class="score-val">+${cpuSurs*5}</span></div>`;
+            html += `<div class="breakdown-title">SURS</div>`;
+            html += `<div style="font-size:10px; color:#aaa;">You: ${playerSurs * 5}</div>`;
+            html += `<div style="font-size:10px; color:#aaa;">CPU: ${cpuSurs * 5}</div>`;
             html += `</div>`;
         }
 
@@ -712,7 +700,7 @@
         document.getElementById('message-overlay').style.display = 'block';
     }
 
-    // --- Core Logic --- (Move Validation etc same as before)
+    // --- Core Logic --- 
     function canCardPickUpAny(card, currentTable) {
         if (card.rank === 'J') return currentTable.some(c => c.value <= 11 && c.rank !== 'K' && c.rank !== 'Q');
         if (card.rank === 'K') return currentTable.some(c => c.rank === 'K');
@@ -880,7 +868,7 @@
                 showToast("Jack Clear");
             } else {
                 if (isPlayer) playerSurs++; else cpuSurs++;
-                showToast("SUR!");
+                showToast("SUR"); // Removed exclamation
             }
         }
     }
@@ -897,7 +885,6 @@
         if (move.isPickup) {
             const newTable = [];
             
-            // Re-calc specific capture for visual accuracy
             if (move.targets.length > 0) {
                  table.forEach(t => {
                     if (move.targets.includes(t)) captured.push(t);
