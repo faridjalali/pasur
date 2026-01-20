@@ -36,13 +36,12 @@
             touch-action: none; 
         }
 
-        /* Wrapper to center content vertically */
         #game-board {
             flex: 1;
             display: flex;
             flex-direction: column;
-            justify-content: center; /* Centers the rows vertically */
-            gap: 25px; /* Symmetrical gap between rows */
+            justify-content: center;
+            gap: 25px;
             padding: 10px;
             position: relative;
         }
@@ -71,13 +70,40 @@
             justify-content: center;
             padding: 10px;
             gap: 8px;
-            position: relative; /* For absolute positioning of pill */
+            position: relative; 
+            z-index: 1;
         }
 
-        /* --- Deck Counter (Absolute Position for Symmetry) --- */
+        /* --- Capture Showcase (The vertical stack) --- */
+        #capture-showcase {
+            position: absolute;
+            top: 10px;
+            bottom: 10px;
+            width: var(--card-width);
+            pointer-events: none;
+            z-index: 20;
+            display: none; /* Hidden by default */
+        }
+        
+        #capture-showcase.left {
+            left: 15px;
+        }
+        
+        #capture-showcase.right {
+            right: 15px;
+        }
+
+        .showcase-card {
+            position: absolute;
+            left: 0;
+            box-shadow: -2px 2px 5px rgba(0,0,0,0.4);
+            transition: transform 0.3s ease-out;
+        }
+
+        /* --- Deck Counter --- */
         #deck-counter-pill {
             position: absolute;
-            top: -20px; /* Floats in the gap above the table */
+            top: -20px;
             left: 50%;
             transform: translateX(-50%);
             background: rgba(0, 0, 0, 0.3);
@@ -92,7 +118,6 @@
             pointer-events: none;
         }
 
-        /* --- Hand Areas --- */
         .hand-area {
             flex: 1;
             display: flex;
@@ -195,13 +220,11 @@
 
         /* --- Controls --- */
         #controls {
-            /* Increased height and padding to lift button */
             height: 100px; 
             display: flex;
             justify-content: center;
-            align-items: flex-start; /* Align top of container */
+            align-items: flex-start;
             gap: 15px;
-            /* Lifts the button up significantly */
             padding-bottom: calc(40px + var(--safe-bottom));
             flex-shrink: 0;
         }
@@ -287,6 +310,7 @@
 
     <div id="table-area">
         <div id="deck-counter-pill">Deck: 52</div>
+        <div id="capture-showcase"></div>
     </div>
 
     <div class="player-row">
@@ -331,11 +355,11 @@
     let isPlayerTurn = true;
     let lastRound = false; 
     let lastTaker = null; 
+    let isPaused = false;
 
     // Selection
     let selectedHandIndex = -1;
     let selectedTableIndices = [];
-    
     let pickupPossibleForSelected = false;
 
     // --- Swipe Variables ---
@@ -375,6 +399,7 @@
         cpuSurs = 0;
         lastRound = false;
         lastTaker = null;
+        isPaused = false;
         
         let validTable = false;
         while (!validTable) {
@@ -430,7 +455,6 @@
     // --- Core Logic ---
     function canCardPickUpAny(card, currentTable) {
         if (card.rank === 'J') return currentTable.length > 0;
-        
         if (card.rank === 'K') return currentTable.some(c => c.rank === 'K');
         if (card.rank === 'Q') return currentTable.some(c => c.rank === 'Q');
         
@@ -454,7 +478,6 @@
     }
 
     function validateMove(card, selectedTableCards, allTableCards) {
-        // JACK SWEEP
         if (card.rank === 'J') {
             if (allTableCards.length > 0) {
                 return { isValid: true, isPickup: true, special: 'JACK_SWEEP' };
@@ -488,10 +511,40 @@
         return { isValid: false };
     }
 
+    // --- UI/Animation ---
+    function showCaptureAnim(cards, side) {
+        return new Promise(resolve => {
+            const showcase = document.getElementById('capture-showcase');
+            showcase.innerHTML = '';
+            showcase.className = side; // Apply 'left' or 'right' class
+            showcase.style.display = 'block';
+
+            // Stack cards vertically
+            cards.forEach((card, i) => {
+                const el = createCardEl(card);
+                el.classList.add('showcase-card');
+                // Stagger them vertically
+                el.style.top = (i * 25) + 'px'; 
+                showcase.appendChild(el);
+            });
+
+            // Pause
+            isPaused = true;
+            updateUI(); // Disable buttons via checkPossibleMoves inside updateUI
+
+            setTimeout(() => {
+                showcase.style.display = 'none';
+                showcase.innerHTML = '';
+                isPaused = false;
+                resolve();
+            }, 1500);
+        });
+    }
+
     // --- Interaction ---
-    function handleActionButton() {
+    async function handleActionButton() {
         const btn = document.getElementById('btn-action');
-        if (btn.disabled || !isPlayerTurn) return;
+        if (btn.disabled || !isPlayerTurn || isPaused) return;
         
         const card = playerHand[selectedHandIndex];
         let tableSubset = selectedTableIndices.map(i => table[i]);
@@ -500,36 +553,46 @@
         if (!v.isValid) return;
 
         playerHand.splice(selectedHandIndex, 1);
+        let captured = [];
 
         if (v.isPickup) {
             if (v.special === 'JACK_SWEEP') {
-                playerPile.push(card, ...table);
+                captured = [card, ...table];
+                playerPile.push(...captured);
                 table = [];
             } else {
                 selectedTableIndices.sort((a,b) => b-a);
                 selectedTableIndices.forEach(idx => {
-                    playerPile.push(table[idx]);
+                    captured.push(table[idx]);
                     table.splice(idx, 1);
                 });
-                playerPile.push(card);
+                captured.push(card);
+                playerPile.push(...captured);
             }
             lastTaker = 'player';
+            
+            // UI Update logic
+            selectedHandIndex = -1;
+            selectedTableIndices = [];
+            updateUI(); // Refresh board (cards gone)
+            
             checkSur(true, card); 
+            await showCaptureAnim(captured, 'right'); // Wait for anim
+            
         } else {
             table.push(card);
+            selectedHandIndex = -1;
+            selectedTableIndices = [];
+            updateUI();
         }
 
-        selectedHandIndex = -1;
-        selectedTableIndices = [];
-        updateUI();
-        
         checkRoundOrTurnEnd();
     }
 
     function checkDisabledReason() {
         const btn = document.getElementById('btn-action');
         if (!btn.disabled) return;
-        if (!isPlayerTurn) return;
+        if (!isPlayerTurn || isPaused) return;
 
         if (selectedHandIndex === -1) {
             showToast("Select a card");
@@ -545,7 +608,7 @@
     function checkSur(isPlayer, playedCard) {
         if (table.length === 0 && !lastRound) {
             if (playedCard.rank === 'J') {
-                showToast("Jack Clear (No Sur)");
+                showToast("Jack Clear");
             } else {
                 if (isPlayer) playerSurs++; else cpuSurs++;
                 showToast("SUR!");
@@ -553,35 +616,43 @@
         }
     }
 
-    function cpuTurn() {
+    async function cpuTurn() {
+        if (isPaused) return;
         const move = calculateCPUMove();
         
         const cardIndex = cpuHand.indexOf(move.card);
         cpuHand.splice(cardIndex, 1);
         
+        let captured = [];
+
         if (move.isPickup) {
             const newTable = [];
-            const taken = [];
             table.forEach(t => {
-                if (move.targets.includes(t)) taken.push(t);
+                if (move.targets.includes(t)) captured.push(t);
                 else newTable.push(t);
             });
             table = newTable;
-            cpuPile.push(move.card, ...taken);
+            captured.push(move.card);
+            cpuPile.push(...captured);
             lastTaker = 'cpu';
+
+            updateUI();
             checkSur(false, move.card);
+            await showCaptureAnim(captured, 'left');
+            
         } else {
             table.push(move.card);
+            updateUI();
         }
 
-        updateUI();
         checkRoundOrTurnEnd();
     }
 
     function checkRoundOrTurnEnd() {
         if (playerHand.length === 0 && cpuHand.length === 0) {
             if (deck.length > 0) {
-                setTimeout(() => dealRound(false), 1000);
+                // Ensure paused delay doesn't conflict
+                setTimeout(() => dealRound(false), 500);
             } else {
                 if (table.length > 0) {
                     if (lastTaker === 'player') playerPile.push(...table);
@@ -608,6 +679,7 @@
         btn.textContent = "Play";
         pickupPossibleForSelected = false;
         
+        if (isPaused || !isPlayerTurn) return; // Explicitly disable if paused
         if (selectedHandIndex === -1) return;
 
         const card = playerHand[selectedHandIndex];
@@ -729,9 +801,16 @@
         const body = document.getElementById('msg-body');
         body.innerHTML = `
             <div style="font-size:1.5rem; color:white; margin-bottom:10px;">${pScore} - ${cScore}</div>
-            <div style="font-size:0.9rem">
-            YOU: ${pClubs} Clubs, ${playerSurs} Surs<br>
-            CPU: ${cClubs} Clubs, ${cpuSurs} Surs
+            <div style="font-size:0.9rem; text-align:left; display:inline-block;">
+            <strong>Your Stats:</strong><br>
+            Clubs: ${pClubs} <br>
+            Surs: ${playerSurs} (x5)<br>
+            Aces/Jacks: ${playerPile.filter(c=>'AJ'.includes(c.rank)).length}<br>
+            10♦ / 2♣: ${playerPile.filter(c=>(c.rank=='10'&&c.suit=='♦')||(c.rank=='2'&&c.suit=='♣')).length}
+            <br><br>
+            <strong>CPU Stats:</strong><br>
+            Clubs: ${cClubs} <br>
+            Surs: ${cpuSurs} (x5)
             </div>
         `;
         document.getElementById('message-overlay').style.display = 'block';
@@ -791,10 +870,12 @@
         document.getElementById('deck-counter-pill').textContent = `Deck: ${deck.length}`;
 
         const tableDiv = document.getElementById('table-area');
-        // Clear except pill
-        const pill = document.getElementById('deck-counter-pill');
+        // Keep non-card elements (pill, showcase)
+        const staticEls = Array.from(tableDiv.children).filter(el => 
+            el.id === 'deck-counter-pill' || el.id === 'capture-showcase'
+        );
         tableDiv.innerHTML = '';
-        tableDiv.appendChild(pill); // Keep pill inside
+        staticEls.forEach(el => tableDiv.appendChild(el));
 
         table.forEach((card, idx) => {
             const el = createCardEl(card);
@@ -837,7 +918,7 @@
     }
 
     function selectHandCard(idx) {
-        if (!isPlayerTurn) return;
+        if (!isPlayerTurn || isPaused) return;
         if (selectedHandIndex === idx) selectedHandIndex = -1; 
         else selectedHandIndex = idx;
         selectedTableIndices = []; 
@@ -845,7 +926,7 @@
     }
 
     function toggleTableSelection(idx) {
-        if (!isPlayerTurn) return;
+        if (!isPlayerTurn || isPaused) return;
         if (selectedHandIndex === -1) {
             showToast("Select a card first");
             return; 
