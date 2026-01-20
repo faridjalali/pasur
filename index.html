@@ -41,20 +41,48 @@
             display: flex;
             flex-direction: column;
             justify-content: center;
-            gap: 25px;
+            gap: 20px;
             padding: 10px;
             position: relative;
         }
 
+        /* --- Player Rows --- */
         .player-row {
             display: flex;
             align-items: center;
             justify-content: space-between;
             height: 100px; 
             padding: 0 10px;
-            flex-shrink: 0;
             position: relative;
             z-index: 2;
+        }
+
+        /* --- STACK ANCHORS (The visible stacking containers) --- */
+        .stack-anchor {
+            position: absolute;
+            right: 10px; /* Locked to the right side */
+            top: 50%;
+            transform: translateY(-50%);
+            width: var(--card-width);
+            height: var(--card-height); /* Base height of one card */
+            z-index: 999; /* Highest priority */
+            pointer-events: none; /* Let clicks pass through */
+            /* Ensure no overflow clipping so the stack can hang down */
+            overflow: visible; 
+        }
+
+        /* Used by JS to create the cards inside the anchor */
+        .stacked-card {
+            position: absolute !important;
+            left: 0 !important;
+            width: 100% !important;
+            height: 100% !important;
+            margin: 0 !important;
+            background-color: white;
+            border-radius: var(--card-radius);
+            border: 1px solid #999;
+            box-shadow: 0 -1px 4px rgba(0,0,0,0.5); /* Shadow showing separation */
+            transform-origin: top center;
         }
 
         /* --- Table Area --- */
@@ -72,36 +100,6 @@
             gap: 8px;
             position: relative; 
             z-index: 1;
-        }
-
-        /* --- Capture Showcase Containers --- */
-        .capture-container {
-            position: absolute;
-            right: 15px; /* Right side of the row */
-            /* We center the container vertically relative to row */
-            top: 50%;
-            transform: translateY(-50%);
-            width: var(--card-width);
-            /* Height is auto to allow stack to grow, handled in JS positioning */
-            height: 0; 
-            pointer-events: none;
-            z-index: 200; /* Very high to float over everything */
-            display: none; 
-            overflow: visible;
-        }
-
-        .showcase-card {
-            position: absolute;
-            left: 0;
-            width: var(--card-width);
-            height: var(--card-height);
-            background-color: white;
-            border-radius: var(--card-radius);
-            border: 1px solid #999;
-            /* Shadow that casts downwards to show stacking */
-            box-shadow: 0px 2px 5px rgba(0,0,0,0.4); 
-            transition: none;
-            transform-origin: top center;
         }
 
         /* --- Deck Counter --- */
@@ -131,7 +129,7 @@
             height: 100%;
         }
 
-        /* --- Indicators --- */
+        /* --- Turn Indicator --- */
         .turn-indicator {
             width: 40px;
             height: 40px;
@@ -155,6 +153,7 @@
             animation: pulse 1.5s infinite;
         }
 
+        /* --- Sur Area (Right Side) --- */
         .sur-area {
             width: 60px;
             text-align: right;
@@ -163,13 +162,12 @@
             flex-direction: column;
             align-items: flex-end;
             gap: 2px;
-            z-index: 10; 
-            opacity: 1; 
             transition: opacity 0.2s;
         }
         
-        .sur-area.dimmed {
-            opacity: 0.1;
+        /* When stack is showing, hide the Surs to avoid overlap mess */
+        .sur-area.hidden {
+            opacity: 0;
         }
 
         .sur-pill {
@@ -314,7 +312,7 @@
         
         <div id="opponent-hand" class="hand-area"></div>
         
-        <div id="cpu-showcase" class="capture-container"></div>
+        <div id="cpu-stack-anchor" class="stack-anchor"></div>
 
         <div class="sur-area" id="cpu-sur-area">
             <div id="cpu-sur-container"></div>
@@ -332,7 +330,7 @@
 
         <div id="player-hand" class="hand-area"></div>
         
-        <div id="player-showcase" class="capture-container"></div>
+        <div id="player-stack-anchor" class="stack-anchor"></div>
 
         <div class="sur-area" id="player-sur-area">
             <div id="player-sur-container"></div>
@@ -526,48 +524,49 @@
     }
 
     // --- UI/Animation ---
-    function showCaptureAnim(cards, containerId) {
+    function showCaptureAnim(cards, anchorId) {
         return new Promise(resolve => {
-            const showcase = document.getElementById(containerId);
-            const surId = containerId === 'cpu-showcase' ? 'cpu-sur-area' : 'player-sur-area';
+            const container = document.getElementById(anchorId);
+            const surId = anchorId === 'cpu-stack-anchor' ? 'cpu-sur-area' : 'player-sur-area';
             
-            document.getElementById(surId).classList.add('dimmed');
+            // Hide Sur area temporarily so it doesn't overlap
+            document.getElementById(surId).classList.add('hidden');
             
-            showcase.innerHTML = '';
-            showcase.style.display = 'block';
+            container.innerHTML = ''; // Clear previous
 
-            // Center the stack vertically
-            // Calculate total height to shift it up by half that amount
-            // Height = (N-1)*offset + cardHeight
-            const offset = 12; // 12px visible strip (approx 14% of 84px)
-            const totalH = ((cards.length - 1) * offset) + 84;
+            // Offset per card. 15px is enough to see rank/suit index
+            const OFFSET = 15; 
             
-            // We use top:50% on container, so we just shift up by half of totalH
-            // But since cards are absolute positioned from 0, we shift the FIRST card up
-            // actually we can just set margin-top on the container
-            showcase.style.marginTop = `-${totalH / 2}px`;
+            // Re-center logic: We want the middle of the stack to be at top:50% of the anchor
+            // Anchor is fixed height (84px). Stack height is (N-1)*15 + 84.
+            // We shift the first card up so the stack appears centered.
+            const totalStackHeight = ((cards.length - 1) * OFFSET) + 84;
+            const shiftUp = (totalStackHeight - 84) / 2;
 
             cards.forEach((card, i) => {
                 const el = createCardEl(card);
-                el.classList.add('showcase-card');
+                el.classList.add('stacked-card');
                 
-                // Stack downwards: i * 12px
-                el.style.top = (i * offset) + 'px'; 
+                // Position logic:
+                // 1. Shift up to center the whole stack
+                // 2. Shift down based on index (i * OFFSET)
+                const topPos = -shiftUp + (i * OFFSET);
                 
-                // Z-index increases so newer cards (i+1) cover the body of older cards (i)
-                // This creates the "Top 15% visible" effect for card i.
-                el.style.zIndex = 50 + i; 
+                el.style.top = topPos + 'px'; 
                 
-                showcase.appendChild(el);
+                // Z-index: i + 10. Higher index = sits ON TOP visually
+                // covering the body of the card below it.
+                el.style.zIndex = 10 + i; 
+                
+                container.appendChild(el);
             });
 
             isPaused = true;
             updateUI(); 
 
             setTimeout(() => {
-                showcase.style.display = 'none';
-                showcase.innerHTML = '';
-                document.getElementById(surId).classList.remove('dimmed');
+                container.innerHTML = ''; // Wipe stack
+                document.getElementById(surId).classList.remove('hidden'); // Show Surs
                 isPaused = false;
                 resolve();
             }, 1500);
@@ -609,7 +608,8 @@
             updateUI(); 
             
             checkSur(true, card); 
-            await showCaptureAnim(captured, 'player-showcase'); 
+            // Trigger Player Stack
+            await showCaptureAnim(captured, 'player-stack-anchor'); 
             
         } else {
             table.push(card);
@@ -670,7 +670,8 @@
 
             updateUI();
             checkSur(false, move.card);
-            await showCaptureAnim(captured, 'cpu-showcase');
+            // Trigger CPU Stack
+            await showCaptureAnim(captured, 'cpu-stack-anchor');
             
         } else {
             table.push(move.card);
@@ -908,11 +909,10 @@
         document.getElementById('deck-counter-pill').textContent = `Deck: ${deck.length}`;
 
         const tableDiv = document.getElementById('table-area');
-        const staticEls = Array.from(tableDiv.children).filter(el => 
-            el.id === 'deck-counter-pill'
-        );
-        tableDiv.innerHTML = '';
-        staticEls.forEach(el => tableDiv.appendChild(el));
+        // Clear children but avoid removing the pill
+        Array.from(tableDiv.children).forEach(child => {
+            if (child.id !== 'deck-counter-pill') child.remove();
+        });
 
         table.forEach((card, idx) => {
             const el = createCardEl(card);
