@@ -2,23 +2,14 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>Pasur</title>
-    
-    <link rel="icon" type="image/png" href="icon_2.PNG">
-    <link rel="apple-touch-icon" href="icon_2.PNG">
-
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Pasur Card Game</title>
     <style>
         :root {
             --felt-green: #2d5e2e;
             --card-width: 60px;
             --card-height: 84px;
             --card-radius: 6px;
-            --highlight: #ffd700;
-            --safe-top: env(safe-area-inset-top, 20px);
-            --safe-bottom: env(safe-area-inset-bottom, 20px);
         }
 
         body {
@@ -32,154 +23,62 @@
             overflow: hidden;
             user-select: none;
             -webkit-user-select: none;
-            padding-top: calc(var(--safe-top) + 10px); 
-            touch-action: none; 
         }
 
+        /* --- Header / Scoreboard --- */
+        #header {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px;
+            background: rgba(0,0,0,0.3);
+            font-size: 0.9rem;
+        }
+        .score-box {
+            text-align: center;
+        }
+        .sur-badge {
+            color: #ffd700;
+            font-weight: bold;
+        }
+
+        /* --- Game Areas --- */
         #game-board {
             flex: 1;
             display: flex;
             flex-direction: column;
-            justify-content: center;
-            gap: 25px;
+            justify-content: space-between;
             padding: 10px;
             position: relative;
         }
 
-        .player-row {
+        .hand-area {
+            height: 100px;
             display: flex;
+            justify-content: center;
             align-items: center;
-            justify-content: space-between;
-            height: 100px; 
-            padding: 0 10px;
-            flex-shrink: 0;
             position: relative;
-            z-index: 2;
         }
 
-        /* --- Table Area --- */
+        #opponent-hand .card {
+            background: linear-gradient(135deg, #a83232 0%, #7d1e1e 100%);
+            border: 2px solid #fff;
+        }
+
         #table-area {
-            flex: none; 
-            height: 25vh; 
-            min-height: 180px;
-            background: rgba(255, 255, 255, 0.05);
+            flex: 1;
+            background: rgba(255, 255, 255, 0.1);
             border-radius: 12px;
+            margin: 10px 0;
             display: flex;
             flex-wrap: wrap;
             align-content: center;
             justify-content: center;
             padding: 10px;
             gap: 8px;
-            position: relative; 
-            z-index: 1;
-        }
-
-        /* --- Capture Showcase (Compact Stack) --- */
-        #capture-showcase {
-            position: absolute;
-            top: 10px;
-            /* Allow height to grow downwards, but stay within container */
-            height: auto;
-            width: var(--card-width);
-            pointer-events: none;
-            z-index: 50;
-            display: none; 
-        }
-        
-        #capture-showcase.left {
-            left: 10px;
-        }
-        
-        #capture-showcase.right {
-            right: 10px;
-        }
-
-        .showcase-card {
-            position: absolute;
-            left: 0;
-            box-shadow: 0px -2px 6px rgba(0,0,0,0.3); /* Shadow upwards for stacking effect */
-            transition: all 0.2s ease-out;
-            transform-origin: top center;
-        }
-
-        /* --- Deck Counter --- */
-        #deck-counter-pill {
-            position: absolute;
-            top: -20px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: rgba(0, 0, 0, 0.3);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            padding: 3px 10px;
-            border-radius: 10px;
-            font-size: 10px;
-            color: rgba(255, 255, 255, 0.8);
-            letter-spacing: 0.5px;
-            text-transform: uppercase;
-            z-index: 5;
-            pointer-events: none;
-        }
-
-        .hand-area {
-            flex: 1;
-            display: flex;
-            justify-content: center;
-            align-items: center;
             position: relative;
-            height: 100%;
-        }
-
-        /* --- Indicators --- */
-        .turn-indicator {
-            width: 40px;
-            height: 40px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            opacity: 0.3;
-            transition: opacity 0.3s;
-        }
-        
-        .turn-indicator.active {
-            opacity: 1;
-        }
-
-        .turn-dot {
-            width: 15px;
-            height: 15px;
-            background-color: var(--highlight);
-            border-radius: 50%;
-            box-shadow: 0 0 10px var(--highlight);
-            animation: pulse 1.5s infinite;
-        }
-
-        .sur-area {
-            width: 60px;
-            text-align: right;
-            font-size: 0.8rem;
-            display: flex;
-            flex-direction: column;
-            align-items: flex-end;
-            gap: 2px;
-        }
-
-        .sur-pill {
-            background: var(--highlight);
-            color: #333;
-            padding: 2px 6px;
-            border-radius: 10px;
-            font-weight: bold;
-            font-size: 10px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.3);
-            margin-bottom: 2px;
         }
 
         /* --- Cards --- */
-        #opponent-hand .card {
-            background: linear-gradient(135deg, #a83232 0%, #7d1e1e 100%);
-            border: 2px solid #fff;
-        }
-
         .card {
             width: var(--card-width);
             height: var(--card-height);
@@ -196,7 +95,6 @@
             cursor: pointer;
             transition: transform 0.2s, box-shadow 0.2s;
             position: relative;
-            -webkit-tap-highlight-color: transparent;
         }
 
         .card.red { color: #d40000; }
@@ -211,78 +109,71 @@
         }
 
         .card.selected {
-            transform: translateY(-15px);
-            box-shadow: 0 0 0 3px var(--highlight), 0 5px 15px rgba(0,0,0,0.5);
+            transform: translateY(-10px);
+            box-shadow: 0 0 0 3px #ffd700, 0 5px 10px rgba(0,0,0,0.5);
             z-index: 10;
         }
 
         .card.target-selected {
             box-shadow: 0 0 0 3px #00e5ff;
         }
+        
+        /* Disabled card look for interactivity */
+        .card.disabled {
+            opacity: 0.7;
+            cursor: default;
+        }
 
         /* --- Controls --- */
         #controls {
-            height: 100px; 
+            height: 60px;
             display: flex;
             justify-content: center;
-            align-items: flex-start;
+            align-items: center;
             gap: 15px;
-            padding-bottom: calc(40px + var(--safe-bottom));
-            flex-shrink: 0;
-        }
-
-        .btn-wrapper {
-            display: inline-block;
-            position: relative;
+            padding-bottom: 10px;
         }
 
         button {
-            background: var(--highlight);
+            background: #ffd700;
             border: none;
-            padding: 14px 40px;
-            border-radius: 30px;
+            padding: 10px 20px;
+            border-radius: 20px;
             font-weight: bold;
             color: #333;
-            font-size: 1.2rem;
-            box-shadow: 0 5px 0 #bfa200;
+            font-size: 1rem;
+            box-shadow: 0 3px 0 #bfa200;
             cursor: pointer;
-            transition: all 0.1s;
-            min-width: 140px;
         }
         button:active {
             transform: translateY(3px);
             box-shadow: none;
         }
         button:disabled {
-            background: #999;
+            background: #ccc;
             box-shadow: none;
-            color: #555;
-            cursor: default;
-            opacity: 0.5;
+            color: #666;
+            cursor: not-allowed;
         }
 
+        /* --- Modals/Overlays --- */
         #message-overlay {
             position: absolute;
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            background: rgba(0,0,0,0.9);
-            padding: 30px;
-            border-radius: 16px;
+            background: rgba(0,0,0,0.8);
+            padding: 20px;
+            border-radius: 10px;
             text-align: center;
             display: none;
             z-index: 100;
             width: 80%;
-            max-width: 300px;
-            border: 1px solid #555;
         }
 
-        @keyframes pulse {
-            0% { transform: scale(0.95); opacity: 0.7; }
-            50% { transform: scale(1.1); opacity: 1; }
-            100% { transform: scale(0.95); opacity: 0.7; }
-        }
+        .hidden { display: none !important; }
 
+        /* Responsive tweaks */
         @media (min-width: 600px) {
             :root {
                 --card-width: 80px;
@@ -293,58 +184,52 @@
 </head>
 <body>
 
-<div id="game-board">
-    <div class="player-row">
-        <div class="turn-indicator" id="cpu-turn-icon">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#ffd700" stroke-width="2">
-                <rect x="2" y="2" width="20" height="20" rx="5"></rect>
-                <circle cx="12" cy="12" r="3"></circle>
-                <line x1="12" y1="2" x2="12" y2="6"></line>
-            </svg>
-        </div>
-        
-        <div id="opponent-hand" class="hand-area"></div>
-        
-        <div class="sur-area">
-            <div id="cpu-sur-container"></div>
-        </div>
+<div id="header">
+    <div class="score-box">
+        <div>CPU</div>
+        <div id="cpu-score-display">Captured: 0</div>
+        <div id="cpu-sur-display" class="sur-badge"></div>
     </div>
+    <div id="deck-info">Deck: 52</div>
+    <div class="score-box">
+        <div>YOU</div>
+        <div id="player-score-display">Captured: 0</div>
+        <div id="player-sur-display" class="sur-badge"></div>
+    </div>
+</div>
+
+<div id="game-board">
+    <div id="opponent-hand" class="hand-area">
+        </div>
 
     <div id="table-area">
-        <div id="deck-counter-pill">Deck: 52</div>
-        <div id="capture-showcase"></div>
+        <div id="last-move-msg" style="position:absolute; bottom:5px; width:100%; text-align:center; font-size:12px; color:#ddd; pointer-events:none;"></div>
     </div>
 
-    <div class="player-row">
-        <div class="turn-indicator" id="player-turn-icon">
-             <div class="turn-dot"></div>
+    <div id="player-hand" class="hand-area">
         </div>
-
-        <div id="player-hand" class="hand-area"></div>
-
-        <div class="sur-area">
-            <div id="player-sur-container"></div>
-        </div>
-    </div>
 </div>
 
 <div id="controls">
-    <div class="btn-wrapper" onclick="checkDisabledReason()">
-        <button id="btn-action" onclick="handleActionButton()">Play</button>
-    </div>
+    <div id="action-text" style="position: absolute; bottom: 70px; font-size: 0.9rem; text-shadow: 1px 1px 2px black;">Select a card to play</div>
+    <button id="btn-action" onclick="handleActionButton()">Play</button>
 </div>
 
 <div id="message-overlay">
-    <h2 id="msg-title" style="margin-top:0">Round Over</h2>
-    <div id="msg-body" style="margin: 20px 0; line-height: 1.5; color: #ccc;"></div>
-    <button onclick="closeOverlay()">Next Round</button>
+    <h2 id="msg-title">Round Over</h2>
+    <p id="msg-body"></p>
+    <button onclick="closeOverlay()">Continue</button>
 </div>
 
 <script>
-    const SUITS = ['♣', '♦', '♥', '♠'];
+    /**
+     * PASUR GAME LOGIC
+     */
+
+    const SUITS = ['♣', '♦', '♥', '♠']; // Clubs, Diamonds, Hearts, Spades
     const RANKS = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K'];
     
-    // State
+    // Game State
     let deck = [];
     let table = [];
     let playerHand = [];
@@ -355,20 +240,13 @@
     let cpuSurs = 0;
     
     let isPlayerTurn = true;
-    let lastRound = false; 
-    let lastTaker = null; 
-    let isPaused = false;
-
-    // Selection
+    let lastRound = false; // Is this the last deal of the deck?
+    
+    // UI Selection State
     let selectedHandIndex = -1;
     let selectedTableIndices = [];
-    let pickupPossibleForSelected = false;
 
-    // --- Swipe Variables ---
-    let touchStartY = 0;
-    let touchStartTime = 0;
-
-    // --- Init ---
+    // Helper: Create Deck
     function createDeck() {
         let d = [];
         for (let s of SUITS) {
@@ -381,11 +259,14 @@
                 else val = parseInt(r);
                 
                 d.push({
-                    suit: s, rank: r, value: val,
+                    suit: s,
+                    rank: r,
+                    value: val,
                     id: Math.random().toString(36).substr(2, 9)
                 });
             }
         }
+        // Shuffle
         for (let i = d.length - 1; i > 0; i--) {
             const j = Math.floor(Math.random() * (i + 1));
             [d[i], d[j]] = [d[j], d[i]];
@@ -393,6 +274,7 @@
         return d;
     }
 
+    // Initialize Game
     function initGame() {
         deck = createDeck();
         playerPile = [];
@@ -400,17 +282,27 @@
         playerSurs = 0;
         cpuSurs = 0;
         lastRound = false;
-        lastTaker = null;
-        isPaused = false;
         
+        // Initial Deal: 4 to each player, 4 to table
+        // Rule: If Jack in initial table, reshuffle.
         let validTable = false;
         while (!validTable) {
+            // Peek at top 4 cards for table
+            let jacks = 0;
+            // We need to simulate the deal to check validity
+            // But simplify: just ensure the 4 table cards aren't jacks
+            // To do this strictly, we'd pick 4, check, if J, put back & shuffle.
+            // Simplified: shuffle until top 4 are not J.
             let hasJack = false;
             for(let i=0; i<4; i++) {
                 if (deck[i].rank === 'J') hasJack = true;
             }
             if (hasJack) {
-                 deck.sort(() => Math.random() - 0.5);
+                // reshuffle
+                 for (let i = deck.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [deck[i], deck[j]] = [deck[j], deck[i]];
+                }
             } else {
                 validTable = true;
             }
@@ -421,10 +313,12 @@
 
     function dealRound(isFirst) {
         if (deck.length === 0) {
-            calculateScore();
+            endGame();
             return;
         }
 
+        // 4 cards to player, 4 to cpu
+        // If first round, 4 to table
         if (isFirst) {
             for (let i=0; i<4; i++) table.push(deck.pop());
         }
@@ -436,279 +330,311 @@
 
         updateUI();
         
+        // If player turn, wait. If CPU (loser of prev game usually, but here random/fixed), play.
+        // We'll stick to Player First for simplicity.
         isPlayerTurn = true;
-        setTurnIndicators();
+        document.getElementById('action-text').textContent = "Your Turn";
         checkPossibleMoves();
     }
 
-    function setTurnIndicators() {
-        const pIcon = document.getElementById('player-turn-icon');
-        const cIcon = document.getElementById('cpu-turn-icon');
-        
-        if (isPlayerTurn) {
-            pIcon.classList.add('active');
-            cIcon.classList.remove('active');
-        } else {
-            pIcon.classList.remove('active');
-            cIcon.classList.add('active');
-        }
-    }
-
-    // --- Core Logic ---
-    function canCardPickUpAny(card, currentTable) {
-        if (card.rank === 'J') return currentTable.length > 0;
-        if (card.rank === 'K') return currentTable.some(c => c.rank === 'K');
-        if (card.rank === 'Q') return currentTable.some(c => c.rank === 'Q');
-        
-        if (card.value <= 10) {
-            const target = 11 - card.value;
-            const nums = currentTable.filter(c => c.value <= 10);
-            const validNums = nums.filter(c => c.value <= target);
-            return hasSubsetSum(validNums.map(c => c.value), target);
-        }
-        return false;
-    }
-
-    function hasSubsetSum(numbers, target) {
-        if (target === 0) return true;
-        if (numbers.length === 0) return false;
-        const first = numbers[0];
-        const rest = numbers.slice(1);
-        if (first > target) return hasSubsetSum(rest, target);
-        if (hasSubsetSum(rest, target - first)) return true;
-        return hasSubsetSum(rest, target);
-    }
-
-    function validateMove(card, selectedTableCards, allTableCards) {
-        if (card.rank === 'J') {
-            if (allTableCards.length > 0) {
-                return { isValid: true, isPickup: true, special: 'JACK_SWEEP' };
-            } else {
-                return { isValid: true, isPickup: false };
-            }
-        }
-
-        if (selectedTableCards.length === 0) {
-            if (canCardPickUpAny(card, allTableCards)) {
-                return { isValid: false, reason: "Must Pick Up!" };
-            }
-            return { isValid: true, isPickup: false };
-        }
-
-        if (card.rank === 'K') {
-            if (selectedTableCards.length === 1 && selectedTableCards[0].rank === 'K') return { isValid: true, isPickup: true };
-            return { isValid: false };
-        }
-        if (card.rank === 'Q') {
-            if (selectedTableCards.length === 1 && selectedTableCards[0].rank === 'Q') return { isValid: true, isPickup: true };
-            return { isValid: false };
-        }
-        
-        if (card.value <= 10) {
-            if (selectedTableCards.some(c => c.value > 10)) return { isValid: false };
-            const sum = selectedTableCards.reduce((a, b) => a + b.value, 0);
-            if (sum + card.value === 11) return { isValid: true, isPickup: true };
-            return { isValid: false };
-        }
-        return { isValid: false };
-    }
-
-    // --- UI/Animation ---
-    function showCaptureAnim(cards, side) {
-        return new Promise(resolve => {
-            const showcase = document.getElementById('capture-showcase');
-            showcase.innerHTML = '';
-            showcase.className = side; 
-            showcase.style.display = 'block';
-
-            // Stack cards vertically and tightly
-            cards.forEach((card, i) => {
-                const el = createCardEl(card);
-                el.classList.add('showcase-card');
-                // Very compact offset (18px) to show index
-                el.style.top = (i * 18) + 'px'; 
-                // Ensure correct layering (higher index on top of stack visually? 
-                // No, standard stack: 0 is bottom, N is top.
-                // But we want to see indices. 
-                // If 0 is at top: 0px. 1 is at top: 18px. 
-                // We want 1 to cover the body of 0.
-                el.style.zIndex = i + 50; 
-                showcase.appendChild(el);
-            });
-
-            isPaused = true;
-            updateUI(); 
-
-            setTimeout(() => {
-                showcase.style.display = 'none';
-                showcase.innerHTML = '';
-                isPaused = false;
-                resolve();
-            }, 1500);
-        });
-    }
-
-    // --- Interaction ---
-    async function handleActionButton() {
-        const btn = document.getElementById('btn-action');
-        if (btn.disabled || !isPlayerTurn || isPaused) return;
-        
-        const card = playerHand[selectedHandIndex];
-        let tableSubset = selectedTableIndices.map(i => table[i]);
-
-        let v = validateMove(card, tableSubset, table);
-        if (!v.isValid) return;
-
-        playerHand.splice(selectedHandIndex, 1);
-        let captured = [];
-
-        if (v.isPickup) {
-            if (v.special === 'JACK_SWEEP') {
-                captured = [card, ...table];
-                playerPile.push(...captured);
-                table = [];
-            } else {
-                selectedTableIndices.sort((a,b) => b-a);
-                selectedTableIndices.forEach(idx => {
-                    captured.push(table[idx]);
-                    table.splice(idx, 1);
-                });
-                captured.push(card);
-                playerPile.push(...captured);
-            }
-            lastTaker = 'player';
-            
-            selectedHandIndex = -1;
-            selectedTableIndices = [];
-            updateUI(); 
-            
-            checkSur(true, card); 
-            await showCaptureAnim(captured, 'right'); 
-            
-        } else {
-            table.push(card);
-            selectedHandIndex = -1;
-            selectedTableIndices = [];
-            updateUI();
-        }
-
-        checkRoundOrTurnEnd();
-    }
-
-    function checkDisabledReason() {
-        const btn = document.getElementById('btn-action');
-        if (!btn.disabled) return;
-        if (!isPlayerTurn || isPaused) return;
-
-        if (selectedHandIndex === -1) {
-            showToast("Select a card");
-        } else if (pickupPossibleForSelected && selectedTableIndices.length === 0) {
-            const card = playerHand[selectedHandIndex];
-            if (card.rank === 'J') return;
-            showToast("Must Pick Up!");
-        } else {
-            if (selectedTableIndices.length > 0) showToast("Invalid Match");
-        }
-    }
-
-    function checkSur(isPlayer, playedCard) {
-        if (table.length === 0 && !lastRound) {
-            if (playedCard.rank === 'J') {
-                showToast("Jack Clear");
-            } else {
-                if (isPlayer) playerSurs++; else cpuSurs++;
-                showToast("SUR!");
-            }
-        }
-    }
-
-    async function cpuTurn() {
-        if (isPaused) return;
-        const move = calculateCPUMove();
-        
-        const cardIndex = cpuHand.indexOf(move.card);
-        cpuHand.splice(cardIndex, 1);
-        
-        let captured = [];
-
-        if (move.isPickup) {
-            const newTable = [];
-            table.forEach(t => {
-                if (move.targets.includes(t)) captured.push(t);
-                else newTable.push(t);
-            });
-            table = newTable;
-            captured.push(move.card);
-            cpuPile.push(...captured);
-            lastTaker = 'cpu';
-
-            updateUI();
-            checkSur(false, move.card);
-            await showCaptureAnim(captured, 'left');
-            
-        } else {
-            table.push(move.card);
-            updateUI();
-        }
-
-        checkRoundOrTurnEnd();
-    }
-
-    function checkRoundOrTurnEnd() {
-        if (playerHand.length === 0 && cpuHand.length === 0) {
-            if (deck.length > 0) {
-                setTimeout(() => dealRound(false), 500);
-            } else {
-                if (table.length > 0) {
-                    if (lastTaker === 'player') playerPile.push(...table);
-                    else cpuPile.push(...table);
-                    table = [];
-                    updateUI();
-                }
-                calculateScore();
-            }
-        } else {
-            isPlayerTurn = !isPlayerTurn;
-            setTurnIndicators();
-            if (!isPlayerTurn) {
-                setTimeout(cpuTurn, 1000 + Math.random()*500);
-            } else {
-                checkPossibleMoves();
-            }
-        }
-    }
-
     function checkPossibleMoves() {
+        // Just for UI hints or logic validation
         const btn = document.getElementById('btn-action');
         btn.disabled = true;
         btn.textContent = "Play";
-        pickupPossibleForSelected = false;
         
-        if (isPaused || !isPlayerTurn) return; 
-        if (selectedHandIndex === -1) return;
+        if (selectedHandIndex === -1) {
+            document.getElementById('action-text').textContent = "Select a card from your hand";
+            return;
+        }
 
         const card = playerHand[selectedHandIndex];
         const tableSubset = selectedTableIndices.map(i => table[i]);
         
-        pickupPossibleForSelected = canCardPickUpAny(card, table);
-
         const validation = validateMove(card, tableSubset, table);
         
         if (validation.isValid) {
             btn.disabled = false;
-            btn.textContent = validation.isPickup ? "Pick Up" : "Discard";
+            if (validation.isPickup) {
+                btn.textContent = "Pick Up";
+            } else {
+                btn.textContent = "Discard";
+            }
+        } else {
+            // If they selected table cards but it's invalid
+            if (selectedTableIndices.length > 0) {
+                document.getElementById('action-text').textContent = "Invalid Combination";
+            } else {
+                // Checks if discard is allowed (illegal if pickup is possible)
+                const canPick = canCardPickUpAny(card, table);
+                if (canPick) {
+                    document.getElementById('action-text').textContent = "You must pick up cards";
+                } else {
+                    btn.disabled = false;
+                    btn.textContent = "Discard";
+                }
+            }
         }
     }
 
+    // --- Core Logic ---
+
+    // Check if a card can pick up ANYTHING from the current table
+    function canCardPickUpAny(card, currentTable) {
+        // 1. Face cards Logic
+        if (card.rank === 'K') return currentTable.some(c => c.rank === 'K');
+        if (card.rank === 'Q') return currentTable.some(c => c.rank === 'Q');
+        if (card.rank === 'J') return currentTable.some(c => c.rank === 'J' || c.value <= 10); // J picks up Js and nums
+
+        // 2. Number Logic (Sum to 11)
+        if (card.value <= 10) {
+            const target = 11 - card.value;
+            // Find any subset that sums to target
+            // Filter only number cards
+            const nums = currentTable.filter(c => c.value <= 10);
+            return hasSubsetSum(nums.map(c => c.value), target);
+        }
+        return false;
+    }
+
+    // Subset sum problem check
+    function hasSubsetSum(numbers, target) {
+        if (target === 0) return true; // (Though technically we need at least 1 card, handled by caller logic usually)
+        if (numbers.length === 0) return false;
+        
+        // standard recursion
+        const first = numbers[0];
+        const rest = numbers.slice(1);
+        
+        // Include first
+        if (first <= target) {
+            if (hasSubsetSum(rest, target - first)) return true;
+        }
+        // Exclude first
+        return hasSubsetSum(rest, target);
+    }
+
+    // Validate a specific move constructed by user
+    function validateMove(card, selectedTableCards, allTableCards) {
+        // Discard attempt (no table cards selected)
+        if (selectedTableCards.length === 0) {
+            // Allowed ONLY if card cannot pick up anything
+            if (canCardPickUpAny(card, allTableCards)) {
+                return { isValid: false, reason: "Must pickup" };
+            }
+            return { isValid: true, isPickup: false };
+        }
+
+        // Pickup attempt
+        
+        // King
+        if (card.rank === 'K') {
+            if (selectedTableCards.length === 1 && selectedTableCards[0].rank === 'K') return { isValid: true, isPickup: true };
+            return { isValid: false };
+        }
+        // Queen
+        if (card.rank === 'Q') {
+            if (selectedTableCards.length === 1 && selectedTableCards[0].rank === 'Q') return { isValid: true, isPickup: true };
+            return { isValid: false };
+        }
+        // Jack
+        if (card.rank === 'J') {
+            // Must be all Jacks or Numbers
+            const allValid = selectedTableCards.every(c => c.rank === 'J' || c.value <= 10);
+            // Must pick up ALL Jacks and Numbers available? 
+            // Wikipedia: "A Jack picks up all Jacks and number cards on the table"
+            // This implies a Jack clears ALL valid targets.
+            // So if user selected subset, we should probably auto-select rest or strictly enforce.
+            // Let's enforce: If playing Jack, you get everything eligible.
+            // But for validation: check if selection matches 'all eligible'.
+            const allEligible = allTableCards.filter(c => c.rank === 'J' || c.value <= 10);
+            if (!allValid) return { isValid: false };
+            
+            // To be user friendly: if they select at least one valid thing with Jack, we take ALL valid things.
+            return { isValid: true, isPickup: true, special: 'JACK_SWEEP' };
+        }
+        // Numbers
+        if (card.value <= 10) {
+            // All selected must be numbers
+            if (selectedTableCards.some(c => c.value > 10)) return { isValid: false };
+            
+            const sum = selectedTableCards.reduce((a, b) => a + b.value, 0);
+            if (sum + card.value === 11) return { isValid: true, isPickup: true };
+            return { isValid: false };
+        }
+
+        return { isValid: false };
+    }
+
+    // --- Action Execution ---
+
+    function handleActionButton() {
+        if (!isPlayerTurn) return;
+        
+        const card = playerHand[selectedHandIndex];
+        // If Jack, we auto-grab all eligible cards if it's a pickup
+        let tableSubset = selectedTableIndices.map(i => table[i]);
+
+        // Re-validate to be safe
+        let v = validateMove(card, tableSubset, table);
+        if (!v.isValid) return;
+
+        // Remove card from hand
+        playerHand.splice(selectedHandIndex, 1);
+
+        if (v.isPickup) {
+            if (v.special === 'JACK_SWEEP') {
+                // Jack takes all numbers and jacks
+                const toTake = [];
+                const toLeave = [];
+                table.forEach(c => {
+                    if (c.rank === 'J' || c.value <= 10) toTake.push(c);
+                    else toLeave.push(c);
+                });
+                table = toLeave;
+                playerPile.push(card, ...toTake);
+            } else {
+                // Standard Pickup
+                // Remove selected indices from table.
+                // Sort indices desc to remove correctly
+                selectedTableIndices.sort((a,b) => b-a);
+                selectedTableIndices.forEach(idx => {
+                    playerPile.push(table[idx]);
+                    table.splice(idx, 1);
+                });
+                playerPile.push(card);
+            }
+            checkSur(true); // Check if player made a Sur
+        } else {
+            // Discard
+            table.push(card);
+        }
+
+        selectedHandIndex = -1;
+        selectedTableIndices = [];
+        updateUI();
+        
+        // End Turn Logic
+        if (playerHand.length === 0 && cpuHand.length === 0) {
+            if (deck.length > 0) {
+                setTimeout(() => dealRound(false), 1000);
+            } else {
+                // Last hand played
+                // Whoever picked up last gets the rest of the table
+                // Since this was Player turn, if Player picked up, Player gets rest.
+                // If Player discarded, CPU picked up last (in prev turn)?
+                // We need to track who picked up last.
+                lastTaker = 'player'; // if isPickup
+                if (!v.isPickup) {
+                    // Player discarded. Last taker remains unchanged.
+                    // If CPU took last, CPU gets these.
+                } 
+                endRoundLogic();
+            }
+        } else {
+            isPlayerTurn = false;
+            document.getElementById('action-text').textContent = "CPU Thinking...";
+            setTimeout(cpuTurn, 1000);
+        }
+    }
+
+    let lastTaker = null; // 'player' or 'cpu'
+
+    function checkSur(isPlayer) {
+        if (table.length === 0 && !lastRound) {
+            // It's a Sur!
+            // Exception: If captured with Jack? Wiki: "When a Jack is used... this is not scored as a Sur"
+            // Wait, we need to know what card was used.
+            // In handleActionButton, we know 'card'.
+            // For now, let's implement basic Sur.
+            
+            // To implement the Jack exception properly, we'd need to pass the played card here.
+            // Let's assume standard Sur for now. 
+            // If the pile's last added card was J, no Sur points.
+            const pile = isPlayer ? playerPile : cpuPile;
+            const playedCard = pile[pile.length - 1]; // Approximate, usually played card is added last or first in batch
+            // Logic improvement: track 'playedCard' in args.
+            
+            if (playedCard.rank === 'J') return; // Exception 1
+
+            if (isPlayer) playerSurs++; else cpuSurs++;
+            
+            showToast(isPlayer ? "SUR! (+5)" : "CPU Sur!");
+        }
+    }
+
+    function cpuTurn() {
+        const move = calculateCPUMove();
+        
+        // Remove card from hand
+        const cardIndex = cpuHand.indexOf(move.card);
+        cpuHand.splice(cardIndex, 1);
+        
+        document.getElementById('last-move-msg').textContent = `CPU played ${move.card.rank}${move.card.suit}`;
+
+        if (move.isPickup) {
+            // Execute Pickup
+            // Remove targets from table
+             // We need to match objects to remove them
+            const newTable = [];
+            const taken = [];
+            
+            table.forEach(t => {
+                if (move.targets.includes(t)) taken.push(t);
+                else newTable.push(t);
+            });
+            table = newTable;
+            
+            cpuPile.push(move.card, ...taken);
+            lastTaker = 'cpu';
+            
+            // Check Sur
+            if (table.length === 0 && !lastRound) {
+                if (move.card.rank !== 'J') {
+                    cpuSurs++;
+                    showToast("CPU Sur!");
+                }
+            }
+        } else {
+            // Discard
+            table.push(move.card);
+        }
+
+        updateUI();
+
+        // Check Round/Game End
+        if (playerHand.length === 0 && cpuHand.length === 0) {
+            if (deck.length > 0) {
+                setTimeout(() => dealRound(false), 1000);
+            } else {
+                endRoundLogic();
+            }
+        } else {
+            isPlayerTurn = true;
+            document.getElementById('action-text').textContent = "Your Turn";
+            // Pre-select logic if desired, or reset
+        }
+    }
+
+    // Basic AI
     function calculateCPUMove() {
+        // 1. Check for Sur (Clear board)
+        // 2. Maximize Points (Clubs, 10D, 2C, Aces, Jacks)
+        // 3. Maximize Cards
+        // 4. Discard non-dangerous cards
+
+        // Find all valid moves for all cards
         let possibleMoves = [];
 
         for (let card of cpuHand) {
+            // Check pickup
             if (card.rank === 'J') {
-                if (table.length > 0) {
-                    possibleMoves.push({ card: card, isPickup: true, targets: [...table], score: 0 });
+                const targets = table.filter(c => c.rank === 'J' || c.value <= 10);
+                if (targets.length > 0) {
+                    possibleMoves.push({ card: card, isPickup: true, targets: targets, score: 0 });
                 } else {
-                     possibleMoves.push({ card: card, isPickup: false, score: -5 });
+                    // Discard J (dangerous if others have J, but allowed)
+                     possibleMoves.push({ card: card, isPickup: false, score: -5 }); // Dislike discarding J
                 }
             } else if (card.rank === 'Q' || card.rank === 'K') {
                 const match = table.find(c => c.rank === card.rank);
@@ -718,23 +644,31 @@
                     possibleMoves.push({ card: card, isPickup: false, score: 0 });
                 }
             } else {
+                // Number
                 const target = 11 - card.value;
                 const nums = table.filter(c => c.value <= 10);
                 const subsets = findSubsets(nums, target);
+                
                 if (subsets.length > 0) {
+                    // Add all subset options
                     subsets.forEach(sub => {
                         possibleMoves.push({ card: card, isPickup: true, targets: sub, score: 0 });
                     });
                 } else {
+                    // Check validity of discard (cannot discard if pickup possible)
+                    // We already know pickup is impossible here
                     possibleMoves.push({ card: card, isPickup: false, score: 0 });
                 }
             }
         }
 
+        // Score Moves
         possibleMoves.forEach(m => {
             if (m.isPickup) {
-                m.score += 10;
-                m.score += m.targets.length * 2;
+                m.score += 10; // Base pickup value
+                m.score += m.targets.length * 2; // Volume
+                
+                // Card specific points
                 [m.card, ...m.targets].forEach(c => {
                     if (c.suit === '♣') m.score += 1;
                     if (c.rank === 'A') m.score += 3;
@@ -742,27 +676,28 @@
                     if (c.rank === '10' && c.suit === '♦') m.score += 10;
                     if (c.rank === '2' && c.suit === '♣') m.score += 5;
                 });
+
+                // Sur check
                 if (table.length === m.targets.length && !lastRound && m.card.rank !== 'J') {
-                    m.score += 50; 
+                    m.score += 50; // Huge priority for Sur
                 }
             } else {
+                // Discard logic: avoid giving opponent points
+                // If I discard an Ace, dangerous.
                 if (m.card.rank === 'A' || m.card.rank === 'J' || m.card.rank === '10' || m.card.rank === '2') {
                     m.score -= 5; 
                 }
+                // Try to discard something that doesn't sum to 11 with what's on table (hard to predict opp hand)
             }
         });
 
-        const cardsWithPickup = new Set(possibleMoves.filter(m => m.isPickup).map(m => m.card));
-        possibleMoves = possibleMoves.filter(m => {
-            if (!m.isPickup && cardsWithPickup.has(m.card)) return false;
-            return true;
-        });
-
+        // Sort by score
         possibleMoves.sort((a,b) => b.score - a.score);
         return possibleMoves[0];
     }
 
     function findSubsets(arr, target) {
+        // Returns array of arrays
         let res = [];
         function backtrack(index, current, currentSum) {
             if (currentSum === target) {
@@ -770,126 +705,117 @@
                 return;
             }
             if (currentSum > target || index >= arr.length) return;
+
+            // Include
             current.push(arr[index]);
             backtrack(index + 1, current, currentSum + arr[index].value);
             current.pop();
+            
+            // Exclude
             backtrack(index + 1, current, currentSum);
         }
         backtrack(0, [], 0);
         return res;
     }
 
+    function endRoundLogic() {
+        // Last taker gets remainder
+        if (table.length > 0) {
+            if (lastTaker === 'player') {
+                playerPile.push(...table);
+            } else {
+                cpuPile.push(...table);
+            }
+            table = [];
+            updateUI();
+        }
+
+        calculateScore();
+    }
+
     function calculateScore() {
         let pScore = 0;
         let cScore = 0;
 
+        // 1. Clubs
         const pClubs = playerPile.filter(c => c.suit === '♣').length;
         const cClubs = cpuPile.filter(c => c.suit === '♣').length;
         
-        let pPoints = 0;
-        let cPoints = 0;
+        if (pClubs > cClubs) pScore += 7;
+        else if (cClubs > pClubs) cScore += 7;
+        // else tie, 0 points
 
-        // Clubs Majority
-        if (pClubs > cClubs) pPoints += 7;
-        else if (cClubs > pClubs) cPoints += 7;
-
-        // Specific Card Points
+        // 2. Specific Cards
         [playerPile, cpuPile].forEach((pile, idx) => {
-            let pts = 0;
+            let score = 0;
             pile.forEach(c => {
-                if (c.rank === 'A') pts += 1;
-                if (c.rank === 'J') pts += 1;
-                if (c.rank === '10' && c.suit === '♦') pts += 3;
-                if (c.rank === '2' && c.suit === '♣') pts += 2;
+                if (c.rank === 'A') score += 1;
+                if (c.rank === 'J') score += 1;
+                if (c.rank === '10' && c.suit === '♦') score += 3;
+                if (c.rank === '2' && c.suit === '♣') score += 2;
             });
-            if (idx === 0) pPoints += pts; else cPoints += pts;
+            if (idx === 0) pScore += score; else cScore += score;
         });
 
-        // Sur Points
-        pPoints += (playerSurs * 5);
-        cPoints += (cpuSurs * 5);
+        // 3. Surs
+        pScore += (playerSurs * 5);
+        cScore += (cpuSurs * 5);
 
+        // Show Result
+        const title = document.getElementById('msg-title');
         const body = document.getElementById('msg-body');
+        
+        title.textContent = "Round Complete";
         body.innerHTML = `
-            <div style="font-size:1.5rem; color:white; margin-bottom:10px;">${pPoints} - ${cPoints}</div>
-            <div style="font-size:0.9rem; text-align:left; display:inline-block; line-height:1.6;">
-            <strong>Your Stats:</strong><br>
-            Clubs: ${pClubs} <br>
-            Surs: ${playerSurs} (x5)<br>
-            Points (A, J, 10♦, 2♣): ${playerPile.reduce((acc, c) => {
-                if(c.rank=='A'||c.rank=='J') return acc+1;
-                if(c.rank=='10'&&c.suit=='♦') return acc+3;
-                if(c.rank=='2'&&c.suit=='♣') return acc+2;
-                return acc;
-            }, 0)}
-            <br><br>
-            <strong>CPU Stats:</strong><br>
-            Clubs: ${cClubs} <br>
-            Surs: ${cpuSurs} (x5)
-            </div>
+            Your Score: ${pScore} <br>
+            (Clubs: ${pClubs}, Surs: ${playerSurs})<br><br>
+            CPU Score: ${cScore} <br>
+            (Clubs: ${cClubs}, Surs: ${cpuSurs})
         `;
+        
         document.getElementById('message-overlay').style.display = 'block';
     }
 
     function closeOverlay() {
         document.getElementById('message-overlay').style.display = 'none';
+        // Reset for new game
         initGame();
     }
     
     function showToast(msg) {
-        const existing = document.getElementById('toast-msg');
-        if (existing) existing.remove();
-
         const d = document.createElement('div');
-        d.id = 'toast-msg';
         d.textContent = msg;
         d.style.position = 'absolute';
-        d.style.top = '50%';
+        d.style.top = '40%';
         d.style.left = '50%';
         d.style.transform = 'translate(-50%, -50%)';
-        d.style.background = 'rgba(255, 215, 0, 0.95)';
+        d.style.background = 'rgba(255, 215, 0, 0.9)';
         d.style.color = '#000';
-        d.style.padding = '12px 25px';
-        d.style.borderRadius = '30px';
+        d.style.padding = '10px 20px';
+        d.style.borderRadius = '20px';
         d.style.fontWeight = 'bold';
         d.style.zIndex = 200;
-        d.style.pointerEvents = 'none';
-        d.style.whiteSpace = 'nowrap';
-        d.style.boxShadow = '0 5px 15px rgba(0,0,0,0.5)';
-        d.style.animation = 'fadeout 1.5s forwards';
-        
+        d.style.animation = 'fadeout 2s forwards';
         document.body.appendChild(d);
-        setTimeout(() => { if(d.parentNode) d.remove(); }, 1500);
+        setTimeout(() => d.remove(), 2000);
     }
 
+    // --- Rendering ---
+    
     function updateUI() {
-        const pSurCont = document.getElementById('player-sur-container');
-        const cSurCont = document.getElementById('cpu-sur-container');
-        
-        pSurCont.innerHTML = '';
-        for(let i=0; i<playerSurs; i++) {
-            const sp = document.createElement('div');
-            sp.className = 'sur-pill';
-            sp.textContent = 'SUR';
-            pSurCont.appendChild(sp);
-        }
+        // Update counts
+        document.getElementById('deck-info').textContent = `Deck: ${deck.length}`;
+        document.getElementById('player-score-display').textContent = `Cards: ${playerPile.length}`;
+        document.getElementById('cpu-score-display').textContent = `Cards: ${cpuPile.length}`;
+        document.getElementById('player-sur-display').textContent = playerSurs > 0 ? `Sur x${playerSurs}` : "";
+        document.getElementById('cpu-sur-display').textContent = cpuSurs > 0 ? `Sur x${cpuSurs}` : "";
 
-        cSurCont.innerHTML = '';
-        for(let i=0; i<cpuSurs; i++) {
-            const sp = document.createElement('div');
-            sp.className = 'sur-pill';
-            sp.textContent = 'SUR';
-            cSurCont.appendChild(sp);
-        }
-
-        document.getElementById('deck-counter-pill').textContent = `Deck: ${deck.length}`;
-
+        // Render Table
         const tableDiv = document.getElementById('table-area');
-        const staticEls = Array.from(tableDiv.children).filter(el => 
-            el.id === 'deck-counter-pill' || el.id === 'capture-showcase'
-        );
+        // keep msg
+        const msg = document.getElementById('last-move-msg');
         tableDiv.innerHTML = '';
-        staticEls.forEach(el => tableDiv.appendChild(el));
+        tableDiv.appendChild(msg);
 
         table.forEach((card, idx) => {
             const el = createCardEl(card);
@@ -898,6 +824,7 @@
             tableDiv.appendChild(el);
         });
 
+        // Render Player Hand
         const pHandDiv = document.getElementById('player-hand');
         pHandDiv.innerHTML = '';
         playerHand.forEach((card, idx) => {
@@ -907,6 +834,7 @@
             pHandDiv.appendChild(el);
         });
 
+        // Render CPU Hand (Backs)
         const cHandDiv = document.getElementById('opponent-hand');
         cHandDiv.innerHTML = '';
         cpuHand.forEach(() => {
@@ -917,68 +845,61 @@
             cHandDiv.appendChild(el);
         });
         
+        // Update Button State
         checkPossibleMoves();
     }
 
     function createCardEl(card) {
         const el = document.createElement('div');
         el.className = `card ${['♥','♦'].includes(card.suit) ? 'red' : 'black'}`;
+        
         el.innerHTML = `
-            <div style="font-size:14px; text-align:left;">${card.rank}</div>
+            <div style="font-size:14px; text-align:left;">${card.rank}<br>${card.suit}</div>
             <div class="card-center">${card.suit}</div>
-            <div style="font-size:14px; text-align:right; transform: rotate(180deg);">${card.rank}</div>
+            <div style="font-size:14px; text-align:right; transform: rotate(180deg);">${card.rank}<br>${card.suit}</div>
         `;
         return el;
     }
 
+    // --- Interaction Handlers ---
+
     function selectHandCard(idx) {
-        if (!isPlayerTurn || isPaused) return;
-        if (selectedHandIndex === idx) selectedHandIndex = -1; 
-        else selectedHandIndex = idx;
-        selectedTableIndices = []; 
+        if (!isPlayerTurn) return;
+        if (selectedHandIndex === idx) selectedHandIndex = -1; // Deselect
+        else {
+            selectedHandIndex = idx;
+            // Auto-detect obvious moves? 
+            // Optional: Auto-select table cards if only one valid combo exists.
+            // For now, keep manual to avoid confusion.
+        }
+        selectedTableIndices = []; // Reset table selection on hand switch
         updateUI();
     }
 
     function toggleTableSelection(idx) {
-        if (!isPlayerTurn || isPaused) return;
-        if (selectedHandIndex === -1) {
-            showToast("Select a card first");
-            return; 
-        }
+        if (!isPlayerTurn) return;
+        if (selectedHandIndex === -1) return; // Must select hand card first
+
         const pos = selectedTableIndices.indexOf(idx);
         if (pos >= 0) selectedTableIndices.splice(pos, 1);
         else selectedTableIndices.push(idx);
         updateUI();
     }
 
-    document.addEventListener('touchstart', e => {
-        touchStartY = e.changedTouches[0].screenY;
-        touchStartTime = new Date().getTime();
-    }, {passive: false});
-
-    document.addEventListener('touchend', e => {
-        const touchEndY = e.changedTouches[0].screenY;
-        const endTime = new Date().getTime();
-        
-        const distance = touchStartY - touchEndY; // Positive = UP
-        const duration = endTime - touchStartTime;
-
-        if (distance > 150 && duration < 400) {
-            location.reload();
-        }
-    }, {passive: false});
-
+    // Add CSS Animation keyframes
     const styleSheet = document.createElement("style");
     styleSheet.innerText = `
         @keyframes fadeout {
             0% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
-            80% { opacity: 1; transform: translate(-50%, -60%) scale(1.1); }
+            80% { opacity: 1; transform: translate(-50%, -50%) scale(1.1); }
             100% { opacity: 0; transform: translate(-50%, -100%); }
         }
     `;
     document.head.appendChild(styleSheet);
 
+    // Start
     initGame();
+
 </script>
 </body>
 </html>
