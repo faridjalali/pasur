@@ -74,13 +74,12 @@
             z-index: 1;
         }
 
-        /* --- Capture Showcase (Ultra Compact) --- */
+        /* --- Capture Showcase (Tight Stack) --- */
         #capture-showcase {
             position: absolute;
             width: var(--card-width);
-            /* Center vertically within the table area */
             top: 50%;
-            transform: translateY(-50%); 
+            transform: translateY(-50%);
             pointer-events: none;
             z-index: 50;
             display: none; 
@@ -97,8 +96,8 @@
         .showcase-card {
             position: absolute;
             left: 0;
-            /* Negative top margin to pull them up into a stack, handled via JS mainly */
-            box-shadow: 0px -1px 3px rgba(0,0,0,0.5); /* Shadow showing separation */
+            /* Strong shadow to define the stack edges */
+            box-shadow: 0px -2px 4px rgba(0,0,0,0.5); 
             transition: all 0.2s ease-out;
             transform-origin: top center;
         }
@@ -522,18 +521,28 @@
             showcase.className = side; 
             showcase.style.display = 'block';
 
-            // Very compact stack logic
+            // Vertical offset to calculate center of mass adjustment if needed,
+            // but for simplicity we pin top card at y=0, next at y=20...
+            // If we have many cards, we clamp height.
+            
             cards.forEach((card, i) => {
                 const el = createCardEl(card);
                 el.classList.add('showcase-card');
                 
-                // Tight offset: 10px per card
-                // This makes it look like a deck held in hand
-                el.style.top = (i * 10) + 'px'; 
+                // Tight offset: 20px - just enough to see rank/suit
+                el.style.top = (i * 20) + 'px'; 
+                // Stack order: First item in array is at bottom of stack visually?
+                // Standard: item 0 is top, item 1 is below it.
+                // To achieve "Card on top of card", the next card (i+1) must have higher z-index
+                // AND be positioned lower.
                 el.style.zIndex = i + 50; 
                 
                 showcase.appendChild(el);
             });
+            
+            // Re-center vertical based on count
+            const totalHeight = (cards.length - 1) * 20 + 84; // 84 is card height
+            showcase.style.height = totalHeight + 'px';
 
             isPaused = true;
             updateUI(); 
@@ -541,6 +550,7 @@
             setTimeout(() => {
                 showcase.style.display = 'none';
                 showcase.innerHTML = '';
+                showcase.style.height = 'auto';
                 isPaused = false;
                 resolve();
             }, 1500);
