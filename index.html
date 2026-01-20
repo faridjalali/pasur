@@ -46,7 +46,7 @@
             position: relative;
         }
 
-        /* --- Player/CPU Row Wrappers --- */
+        /* --- Player Rows --- */
         .player-row {
             position: relative;
             width: 100%;
@@ -114,7 +114,7 @@
             transform: translateY(-50%);
         }
 
-        /* --- Center Column (Hand + Surs + Counters) --- */
+        /* --- Center Column --- */
         .hand-column {
             display: flex;
             flex-direction: column;
@@ -146,21 +146,21 @@
             text-transform: uppercase;
             letter-spacing: 0.5px;
             white-space: nowrap;
-            position: relative; /* Enabled relative positioning for offset */
+            position: relative; 
+            transition: opacity 0.3s; /* Smooth fade */
         }
 
-        /* Adjusting specific pills per user request */
-        #cpu-club-counter {
-            transform: translateY(25px); /* Push Down 25px */
+        .hidden-pill {
+            opacity: 0;
+            pointer-events: none;
         }
 
-        #player-club-counter {
-            transform: translateY(-25px); /* Push Up 25px */
-        }
+        #cpu-club-counter { transform: translateY(25px); }
+        #player-club-counter { transform: translateY(-25px); }
 
         .deck-counter {
             position: absolute;
-            top: -25px; /* Above CPU Hand */
+            top: -25px; 
             background: rgba(0, 0, 0, 0.6);
             border-color: rgba(255, 215, 0, 0.4);
             color: #ffd700;
@@ -177,9 +177,7 @@
             transition: opacity 0.2s;
         }
         
-        .sur-container.hidden {
-            opacity: 0;
-        }
+        .sur-container.hidden { opacity: 0; }
 
         .sur-pill {
             background: var(--highlight);
@@ -192,7 +190,7 @@
             white-space: nowrap;
         }
 
-        /* --- The Cards in the Stack --- */
+        /* --- Stacked Card Styles --- */
         .stacked-card {
             position: absolute !important;
             left: 0 !important;
@@ -283,7 +281,6 @@
         .btn-wrapper {
             display: inline-block;
             position: relative;
-            /* Originally -15px. Moving DOWN by 25px results in 10px. */
             margin-top: 10px; 
         }
 
@@ -312,21 +309,83 @@
             opacity: 0.5;
         }
 
+        /* --- Round Over Modal Styling --- */
         #message-overlay {
             position: absolute;
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            background: rgba(0,0,0,0.9);
-            padding: 30px;
+            background: rgba(0,0,0,0.95);
+            padding: 20px;
             border-radius: 16px;
             text-align: center;
             display: none;
-            z-index: 100;
-            width: 80%;
-            max-width: 300px;
+            z-index: 2000;
+            width: 85%;
+            max-width: 320px;
             border: 1px solid #555;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.8);
         }
+
+        .breakdown-row {
+            display: flex;
+            flex-direction: column;
+            margin-bottom: 12px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            padding-bottom: 10px;
+        }
+
+        .breakdown-title {
+            font-size: 0.85rem;
+            color: #aaa;
+            text-transform: uppercase;
+            margin-bottom: 5px;
+            text-align: left;
+        }
+
+        .mini-cards-container {
+            display: flex;
+            flex-wrap: nowrap;
+            overflow-x: auto;
+            gap: 2px;
+            padding: 4px 0;
+            min-height: 40px;
+            align-items: center;
+        }
+        
+        /* Custom scrollbar for mini cards */
+        .mini-cards-container::-webkit-scrollbar {
+            height: 4px;
+        }
+        .mini-cards-container::-webkit-scrollbar-thumb {
+            background: #555;
+            border-radius: 2px;
+        }
+
+        .mini-card {
+            width: 24px;
+            height: 34px;
+            background: white;
+            border-radius: 3px;
+            color: black;
+            font-size: 10px;
+            font-weight: bold;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-shrink: 0;
+            line-height: 1;
+            border: 1px solid #ccc;
+        }
+        .mini-card.red { color: #d40000; }
+
+        .score-line {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.9rem;
+            margin-top: 2px;
+        }
+        .score-val { color: var(--highlight); font-weight: bold; }
 
         @keyframes pulse {
             0% { transform: scale(0.95); opacity: 0.7; }
@@ -359,11 +418,8 @@
         
         <div class="hand-column">
             <div id="deck-counter-pill" class="info-pill deck-counter">Deck: 52</div>
-
             <div id="cpu-sur-container" class="sur-container"></div>
-            
             <div id="opponent-hand" class="hand-area"></div>
-
             <div id="cpu-club-counter" class="info-pill">Clubs: 0</div>
         </div>
 
@@ -382,9 +438,7 @@
 
         <div class="hand-column">
             <div id="player-club-counter" class="info-pill">Clubs: 0</div>
-
             <div id="player-hand" class="hand-area"></div>
-            
             <div id="player-sur-container" class="sur-container"></div>
         </div>
 
@@ -399,9 +453,9 @@
 </div>
 
 <div id="message-overlay">
-    <h2 id="msg-title" style="margin-top:0">Round Over</h2>
-    <div id="msg-body" style="margin: 20px 0; line-height: 1.5; color: #ccc;"></div>
-    <button onclick="nextRound()">Next Round</button>
+    <h2 id="msg-title" style="margin-top:0; margin-bottom:15px; color:white;">Round Complete</h2>
+    <div id="msg-body" style="text-align:left;"></div>
+    <button id="msg-btn" onclick="nextRound()" style="margin-top:15px; width:100%;">Next Round</button>
 </div>
 
 <script>
@@ -418,7 +472,6 @@
     let playerSurs = 0;
     let cpuSurs = 0;
     
-    // Persistent Scores
     let playerTotalScore = 0;
     let cpuTotalScore = 0;
     
@@ -427,14 +480,9 @@
     let lastTaker = null; 
     let isPaused = false;
 
-    // Selection
     let selectedHandIndex = -1;
     let selectedTableIndices = [];
     let pickupPossibleForSelected = false;
-
-    // --- Swipe Variables ---
-    let touchStartY = 0;
-    let touchStartTime = 0;
 
     // --- Init ---
     function createDeck() {
@@ -462,7 +510,6 @@
     }
 
     function initGame() {
-        // Reset Round State
         deck = createDeck();
         playerPile = [];
         cpuPile = [];
@@ -489,7 +536,18 @@
     }
 
     function nextRound() {
+        // If button says New Game, we reset total scores
+        const btn = document.getElementById('msg-btn');
+        if (btn.textContent === "New Game") {
+            playerTotalScore = 0;
+            cpuTotalScore = 0;
+        }
+        
         document.getElementById('message-overlay').style.display = 'none';
+        
+        // Show pills again
+        document.querySelectorAll('.info-pill').forEach(el => el.classList.remove('hidden-pill'));
+        
         initGame();
     }
 
@@ -528,7 +586,133 @@
         }
     }
 
-    // --- Core Logic ---
+    // --- Scoring Logic ---
+    function calculateScore() {
+        // 1. Hide UI Pills
+        document.querySelectorAll('.info-pill').forEach(el => el.classList.add('hidden-pill'));
+
+        // 2. Filter Cards for logic
+        const pClubs = playerPile.filter(c => c.suit === '♣');
+        const cClubs = cpuPile.filter(c => c.suit === '♣');
+        
+        let pRoundPoints = 0;
+        let cRoundPoints = 0;
+
+        // Clubs Majority (7 points)
+        let clubWinner = null;
+        if (pClubs.length > cClubs.length) {
+            pRoundPoints += 7;
+            clubWinner = 'player';
+        } else if (cClubs.length > pClubs.length) {
+            cRoundPoints += 7;
+            clubWinner = 'cpu';
+        }
+
+        // Special Cards Logic
+        // Ace = 1, Jack = 1, 10♦ = 3, 2♣ = 2
+        const getSpecials = (pile) => pile.filter(c => 
+            c.rank === 'A' || c.rank === 'J' || 
+            (c.rank === '10' && c.suit === '♦') || 
+            (c.rank === '2' && c.suit === '♣')
+        );
+
+        const pSpecials = getSpecials(playerPile);
+        const cSpecials = getSpecials(cpuPile);
+
+        // Helper to calculate points from array
+        const sumPoints = (cards) => cards.reduce((acc, c) => {
+            if (c.rank === 'A' || c.rank === 'J') return acc + 1;
+            if (c.rank === '10' && c.suit === '♦') return acc + 3;
+            if (c.rank === '2' && c.suit === '♣') return acc + 2;
+            return acc;
+        }, 0);
+
+        pRoundPoints += sumPoints(pSpecials);
+        cRoundPoints += sumPoints(cSpecials);
+
+        // Surs
+        pRoundPoints += (playerSurs * 5);
+        cRoundPoints += (cpuSurs * 5);
+
+        // 3. Update Total Scores & UI Side
+        playerTotalScore += pRoundPoints;
+        cpuTotalScore += cRoundPoints;
+        document.getElementById('player-total-score').textContent = `Score: ${playerTotalScore}`;
+        document.getElementById('cpu-total-score').textContent = `Score: ${cpuTotalScore}`;
+
+        // 4. Build Modal HTML
+        const body = document.getElementById('msg-body');
+        
+        // Helper to render mini cards
+        const renderMini = (card) => {
+            const colorClass = (card.suit === '♥' || card.suit === '♦') ? 'red' : 'black';
+            return `<div class="mini-card ${colorClass}">${card.rank}${card.suit}</div>`;
+        };
+
+        const renderRow = (cards) => {
+            if (cards.length === 0) return '<div style="font-size:10px; color:#666;">None</div>';
+            return `<div class="mini-cards-container">${cards.map(renderMini).join('')}</div>`;
+        };
+
+        let html = '';
+
+        // --- Clubs Section ---
+        html += `<div class="breakdown-row">`;
+        html += `<div class="breakdown-title">Clubs (You: ${pClubs.length} vs CPU: ${cClubs.length})</div>`;
+        html += `<div style="font-size:10px; color:#aaa; margin-bottom:2px;">Your Clubs:</div>`;
+        html += renderRow(pClubs);
+        html += `<div style="font-size:10px; color:#aaa; margin:4px 0 2px;">CPU Clubs:</div>`;
+        html += renderRow(cClubs);
+        html += `<div class="score-line"><span>Result:</span> <span class="score-val">${clubWinner === 'player' ? 'You (+7)' : (clubWinner === 'cpu' ? 'CPU (+7)' : 'Tie (0)')}</span></div>`;
+        html += `</div>`;
+
+        // --- Specials Section ---
+        html += `<div class="breakdown-row">`;
+        html += `<div class="breakdown-title">Special Cards</div>`;
+        html += `<div style="font-size:10px; color:#aaa;">You (${sumPoints(pSpecials)} pts):</div>`;
+        html += renderRow(pSpecials);
+        html += `<div style="font-size:10px; color:#aaa; margin-top:4px;">CPU (${sumPoints(cSpecials)} pts):</div>`;
+        html += renderRow(cSpecials);
+        html += `</div>`;
+
+        // --- Surs Section ---
+        if (playerSurs > 0 || cpuSurs > 0) {
+            html += `<div class="breakdown-row">`;
+            html += `<div class="breakdown-title">Surs (+5 each)</div>`;
+            html += `<div class="score-line"><span>You: ${playerSurs}</span> <span class="score-val">+${playerSurs*5}</span></div>`;
+            html += `<div class="score-line"><span>CPU: ${cpuSurs}</span> <span class="score-val">+${cpuSurs*5}</span></div>`;
+            html += `</div>`;
+        }
+
+        // --- Round Total ---
+        html += `<div class="score-line" style="margin-top:10px; font-size:1.1rem; border-top:1px solid #555; padding-top:10px;">`;
+        html += `<span>Round Total:</span>`;
+        html += `<span>You: <b style="color:#ffd700">${pRoundPoints}</b>  CPU: <b style="color:#ffd700">${cRoundPoints}</b></span>`;
+        html += `</div>`;
+
+        // Game Over Check
+        const btn = document.getElementById('msg-btn');
+        if (playerTotalScore >= 62 || cpuTotalScore >= 62) {
+            const title = document.getElementById('msg-title');
+            title.textContent = "GAME OVER";
+            title.style.color = "#ffd700";
+            
+            const winner = playerTotalScore > cpuTotalScore ? "YOU WIN!" : (cpuTotalScore > playerTotalScore ? "CPU WINS!" : "DRAW!");
+            html += `<div style="margin-top:20px; text-align:center; font-size:1.5rem; color:#00e5ff; font-weight:bold;">${winner}</div>`;
+            html += `<div style="text-align:center; font-size:1rem; color:#fff;">Final: ${playerTotalScore} - ${cpuTotalScore}</div>`;
+            
+            btn.textContent = "New Game";
+        } else {
+            document.getElementById('msg-title').textContent = "Round Complete";
+            document.getElementById('msg-title').style.color = "white";
+            btn.textContent = "Next Round";
+        }
+
+        body.innerHTML = html;
+        document.getElementById('message-overlay').style.display = 'block';
+    }
+
+    // --- Core Logic --- (Move Validation etc same as before)
     function canCardPickUpAny(card, currentTable) {
         if (card.rank === 'J') return currentTable.some(c => c.value <= 11 && c.rank !== 'K' && c.rank !== 'Q');
         if (card.rank === 'K') return currentTable.some(c => c.rank === 'K');
@@ -712,12 +896,17 @@
 
         if (move.isPickup) {
             const newTable = [];
-            table.forEach(t => {
-                if (move.targets.includes(t)) captured.push(t);
-                else newTable.push(t);
-            });
-            table = newTable;
-            captured.push(move.card);
+            
+            // Re-calc specific capture for visual accuracy
+            if (move.targets.length > 0) {
+                 table.forEach(t => {
+                    if (move.targets.includes(t)) captured.push(t);
+                    else newTable.push(t);
+                });
+                table = newTable;
+                captured.push(move.card);
+            }
+            
             cpuPile.push(...captured);
             lastTaker = 'cpu';
 
@@ -858,58 +1047,6 @@
         backtrack(0, [], 0);
         return res;
     }
-
-    function calculateScore() {
-        let pScore = 0;
-        let cScore = 0;
-
-        const pClubs = playerPile.filter(c => c.suit === '♣').length;
-        const cClubs = cpuPile.filter(c => c.suit === '♣').length;
-        
-        let roundP = 0;
-        let roundC = 0;
-
-        if (pClubs > cClubs) roundP += 7;
-        else if (cClubs > pClubs) roundC += 7;
-
-        [playerPile, cpuPile].forEach((pile, idx) => {
-            let pts = 0;
-            pile.forEach(c => {
-                if (c.rank === 'A') pts += 1;
-                if (c.rank === 'J') pts += 1;
-                if (c.rank === '10' && c.suit === '♦') pts += 3;
-                if (c.rank === '2' && c.suit === '♣') pts += 2;
-            });
-            if (idx === 0) roundP += pts; else roundC += pts;
-        });
-
-        roundP += (playerSurs * 5);
-        roundC += (cpuSurs * 5);
-
-        // Update Totals
-        playerTotalScore += roundP;
-        cpuTotalScore += roundC;
-
-        const body = document.getElementById('msg-body');
-        let html = `
-            <div style="font-size:1.2rem; color:white; margin-bottom:10px;">Round Points</div>
-            <div style="font-size:1rem; margin-bottom:10px;">You: +${roundP} | CPU: +${roundC}</div>
-            <hr style="border:0; border-top:1px solid #555; margin:10px 0;">
-            <div style="font-size:1.5rem; color:#ffd700; font-weight:bold;">Total Score</div>
-            <div style="font-size:1.2rem;">You: ${playerTotalScore} - CPU: ${cpuTotalScore}</div>
-        `;
-
-        if (playerTotalScore >= 62 || cpuTotalScore >= 62) {
-            const winner = playerTotalScore > cpuTotalScore ? "YOU WIN!" : (cpuTotalScore > playerTotalScore ? "CPU WINS!" : "DRAW!");
-            html += `<div style="margin-top:20px; font-size:1.8rem; color:#00e5ff; font-weight:bold;">${winner}</div>`;
-            // Reset for next game
-            playerTotalScore = 0;
-            cpuTotalScore = 0;
-        }
-
-        body.innerHTML = html;
-        document.getElementById('message-overlay').style.display = 'block';
-    }
     
     function showToast(msg) {
         const existing = document.getElementById('toast-msg');
@@ -956,17 +1093,15 @@
             cSurCont.appendChild(sp);
         }
 
-        // Update Counters
         document.getElementById('deck-counter-pill').textContent = `Deck: ${deck.length}`;
         document.getElementById('player-club-counter').textContent = `Clubs: ${playerPile.filter(c => c.suit === '♣').length}`;
         document.getElementById('cpu-club-counter').textContent = `Clubs: ${cpuPile.filter(c => c.suit === '♣').length}`;
         
-        // Update Total Scores
         document.getElementById('player-total-score').textContent = `Score: ${playerTotalScore}`;
         document.getElementById('cpu-total-score').textContent = `Score: ${cpuTotalScore}`;
 
         const tableDiv = document.getElementById('table-area');
-        tableDiv.innerHTML = ''; // Clean table
+        tableDiv.innerHTML = ''; 
         table.forEach((card, idx) => {
             const el = createCardEl(card);
             el.onclick = () => toggleTableSelection(idx);
@@ -1027,6 +1162,7 @@
         updateUI();
     }
 
+    // Refresh on Hard Swipe Up
     document.addEventListener('touchstart', e => {
         touchStartY = e.changedTouches[0].screenY;
         touchStartTime = new Date().getTime();
