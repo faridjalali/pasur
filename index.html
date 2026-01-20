@@ -32,10 +32,9 @@
             user-select: none;
             -webkit-user-select: none;
             padding-top: calc(var(--safe-top) + 10px); 
-            touch-action: none; /* Prevents browser scrolling/zooming to allow pure swipe detection */
+            touch-action: none; 
         }
 
-        /* --- Layout Containers --- */
         #game-board {
             flex: 1;
             display: flex;
@@ -53,7 +52,6 @@
             padding: 0 10px;
         }
 
-        /* --- Side Indicators (Turn & Surs) --- */
         .turn-indicator {
             width: 40px;
             height: 40px;
@@ -98,7 +96,6 @@
             margin-bottom: 2px;
         }
 
-        /* --- Card Areas --- */
         .hand-area {
             flex: 1;
             display: flex;
@@ -127,7 +124,6 @@
             position: relative;
         }
 
-        /* --- Cards --- */
         .card {
             width: var(--card-width);
             height: var(--card-height);
@@ -168,7 +164,6 @@
             box-shadow: 0 0 0 3px #00e5ff;
         }
 
-        /* --- Controls --- */
         #controls {
             height: 80px;
             display: flex;
@@ -209,7 +204,6 @@
             opacity: 0.5;
         }
 
-        /* --- Modals --- */
         #message-overlay {
             position: absolute;
             top: 50%;
@@ -232,7 +226,6 @@
             100% { transform: scale(0.95); opacity: 0.7; }
         }
 
-        /* Responsive */
         @media (min-width: 600px) {
             :root {
                 --card-width: 80px;
@@ -309,10 +302,9 @@
     let selectedHandIndex = -1;
     let selectedTableIndices = [];
     
-    // Logic Debug
     let pickupPossibleForSelected = false;
 
-    // --- Swipe Detection Variables ---
+    // --- Swipe Variables ---
     let touchStartY = 0;
     let touchStartTime = 0;
 
@@ -403,9 +395,11 @@
 
     // --- Core Logic ---
     function canCardPickUpAny(card, currentTable) {
+        // Jack can pick up ANY card if table is not empty
+        if (card.rank === 'J') return currentTable.length > 0;
+        
         if (card.rank === 'K') return currentTable.some(c => c.rank === 'K');
         if (card.rank === 'Q') return currentTable.some(c => c.rank === 'Q');
-        if (card.rank === 'J') return currentTable.some(c => c.rank === 'J' || c.value <= 10);
         
         if (card.value <= 10) {
             const target = 11 - card.value;
@@ -427,6 +421,15 @@
     }
 
     function validateMove(card, selectedTableCards, allTableCards) {
+        // JACK LOGIC: If Jack, and table has cards, it's a Sweep.
+        if (card.rank === 'J') {
+            if (allTableCards.length > 0) {
+                return { isValid: true, isPickup: true, special: 'JACK_SWEEP' };
+            } else {
+                return { isValid: true, isPickup: false };
+            }
+        }
+
         if (selectedTableCards.length === 0) {
             if (canCardPickUpAny(card, allTableCards)) {
                 return { isValid: false, reason: "Must Pick Up!" };
@@ -442,11 +445,7 @@
             if (selectedTableCards.length === 1 && selectedTableCards[0].rank === 'Q') return { isValid: true, isPickup: true };
             return { isValid: false };
         }
-        if (card.rank === 'J') {
-            const validSubset = selectedTableCards.every(c => c.rank === 'J' || c.value <= 10);
-            if (!validSubset) return { isValid: false };
-            return { isValid: true, isPickup: true, special: 'JACK_SWEEP' };
-        }
+        
         if (card.value <= 10) {
             if (selectedTableCards.some(c => c.value > 10)) return { isValid: false };
             const sum = selectedTableCards.reduce((a, b) => a + b.value, 0);
@@ -471,14 +470,9 @@
 
         if (v.isPickup) {
             if (v.special === 'JACK_SWEEP') {
-                const toTake = [];
-                const toLeave = [];
-                table.forEach(c => {
-                    if (c.rank === 'J' || c.value <= 10) toTake.push(c);
-                    else toLeave.push(c);
-                });
-                table = toLeave;
-                playerPile.push(card, ...toTake);
+                // Jack takes EVERYTHING
+                playerPile.push(card, ...table);
+                table = [];
             } else {
                 selectedTableIndices.sort((a,b) => b-a);
                 selectedTableIndices.forEach(idx => {
@@ -508,6 +502,8 @@
         if (selectedHandIndex === -1) {
             showToast("Select a card");
         } else if (pickupPossibleForSelected && selectedTableIndices.length === 0) {
+            const card = playerHand[selectedHandIndex];
+            if (card.rank === 'J') return;
             showToast("Must Pick Up!");
         } else {
             if (selectedTableIndices.length > 0) showToast("Invalid Match");
@@ -600,9 +596,8 @@
 
         for (let card of cpuHand) {
             if (card.rank === 'J') {
-                const targets = table.filter(c => c.rank === 'J' || c.value <= 10);
-                if (targets.length > 0) {
-                    possibleMoves.push({ card: card, isPickup: true, targets: targets, score: 0 });
+                if (table.length > 0) {
+                    possibleMoves.push({ card: card, isPickup: true, targets: [...table], score: 0 });
                 } else {
                      possibleMoves.push({ card: card, isPickup: false, score: -5 });
                 }
@@ -823,7 +818,6 @@
         updateUI();
     }
 
-    // --- Gesture Listeners ---
     document.addEventListener('touchstart', e => {
         touchStartY = e.changedTouches[0].screenY;
         touchStartTime = new Date().getTime();
@@ -836,10 +830,8 @@
         const distance = touchStartY - touchEndY; // Positive = UP
         const duration = endTime - touchStartTime;
 
-        // Threshold: >150px dist, <400ms duration
         if (distance > 150 && duration < 400) {
-            showToast("Resetting Game...");
-            setTimeout(initGame, 500);
+            location.reload();
         }
     }, {passive: false});
 
