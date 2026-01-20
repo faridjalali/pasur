@@ -18,6 +18,7 @@
             --card-radius: 6px;
             --highlight: #ffd700;
             --safe-top: env(safe-area-inset-top, 20px);
+            --safe-bottom: env(safe-area-inset-bottom, 20px);
         }
 
         body {
@@ -40,8 +41,8 @@
             flex: 1;
             display: flex;
             flex-direction: column;
-            justify-content: center; /* Centers the 3 rows vertically */
-            gap: 15px; /* Control gap between rows */
+            justify-content: center; /* Centers the rows vertically */
+            gap: 25px; /* Symmetrical gap between rows */
             padding: 10px;
             position: relative;
         }
@@ -50,30 +51,17 @@
             display: flex;
             align-items: center;
             justify-content: space-between;
-            height: 100px; /* Slightly tighter height */
+            height: 100px; 
             padding: 0 10px;
             flex-shrink: 0;
+            position: relative;
+            z-index: 2;
         }
 
-        /* --- Deck Counter --- */
-        #deck-counter-pill {
-            align-self: center;
-            background: rgba(0, 0, 0, 0.3);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            padding: 4px 12px;
-            border-radius: 12px;
-            font-size: 11px;
-            color: rgba(255, 255, 255, 0.8);
-            letter-spacing: 0.5px;
-            text-transform: uppercase;
-            margin-top: -5px;
-            margin-bottom: -5px;
-        }
-
-        /* --- Table Area (Restricted Height) --- */
+        /* --- Table Area --- */
         #table-area {
-            flex: none; /* Stop it from expanding to fill space */
-            height: 25vh; /* Fixed relative height (approx 25% of screen) */
+            flex: none; 
+            height: 25vh; 
             min-height: 180px;
             background: rgba(255, 255, 255, 0.05);
             border-radius: 12px;
@@ -83,8 +71,25 @@
             justify-content: center;
             padding: 10px;
             gap: 8px;
-            position: relative;
-            transition: height 0.3s;
+            position: relative; /* For absolute positioning of pill */
+        }
+
+        /* --- Deck Counter (Absolute Position for Symmetry) --- */
+        #deck-counter-pill {
+            position: absolute;
+            top: -20px; /* Floats in the gap above the table */
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 3px 10px;
+            border-radius: 10px;
+            font-size: 10px;
+            color: rgba(255, 255, 255, 0.8);
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            z-index: 5;
+            pointer-events: none;
         }
 
         /* --- Hand Areas --- */
@@ -97,7 +102,7 @@
             height: 100%;
         }
 
-        /* --- Turn & Sur Indicators --- */
+        /* --- Indicators --- */
         .turn-indicator {
             width: 40px;
             height: 40px;
@@ -190,13 +195,14 @@
 
         /* --- Controls --- */
         #controls {
-            height: 80px;
+            /* Increased height and padding to lift button */
+            height: 100px; 
             display: flex;
             justify-content: center;
-            align-items: center;
+            align-items: flex-start; /* Align top of container */
             gap: 15px;
-            /* Padding bottom handles safe area */
-            padding-bottom: calc(20px + env(safe-area-inset-bottom, 0px));
+            /* Lifts the button up significantly */
+            padding-bottom: calc(40px + var(--safe-bottom));
             flex-shrink: 0;
         }
 
@@ -208,15 +214,15 @@
         button {
             background: var(--highlight);
             border: none;
-            padding: 12px 30px;
-            border-radius: 25px;
+            padding: 14px 40px;
+            border-radius: 30px;
             font-weight: bold;
             color: #333;
-            font-size: 1.1rem;
-            box-shadow: 0 4px 0 #bfa200;
+            font-size: 1.2rem;
+            box-shadow: 0 5px 0 #bfa200;
             cursor: pointer;
             transition: all 0.1s;
-            min-width: 120px;
+            min-width: 140px;
         }
         button:active {
             transform: translateY(3px);
@@ -279,9 +285,9 @@
         </div>
     </div>
 
-    <div id="deck-counter-pill">Deck: 52</div>
-
-    <div id="table-area"></div>
+    <div id="table-area">
+        <div id="deck-counter-pill">Deck: 52</div>
+    </div>
 
     <div class="player-row">
         <div class="turn-indicator" id="player-turn-icon">
@@ -785,7 +791,11 @@
         document.getElementById('deck-counter-pill').textContent = `Deck: ${deck.length}`;
 
         const tableDiv = document.getElementById('table-area');
+        // Clear except pill
+        const pill = document.getElementById('deck-counter-pill');
         tableDiv.innerHTML = '';
+        tableDiv.appendChild(pill); // Keep pill inside
+
         table.forEach((card, idx) => {
             const el = createCardEl(card);
             el.onclick = () => toggleTableSelection(idx);
