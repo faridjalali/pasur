@@ -58,7 +58,6 @@
 
         /* --- Side Elements --- */
         
-        /* Turn Indicator: Static Left */
         .turn-indicator {
             position: absolute;
             left: 20px;
@@ -88,7 +87,7 @@
         /* Capture Showcase Anchor: Right 10px */
         .stack-anchor {
             position: absolute;
-            right: 10px; /* Updated to 10px per request */
+            right: 10px; 
             width: var(--card-width);
             height: var(--card-height);
             z-index: 999;
@@ -479,7 +478,10 @@
 
     // --- Core Logic ---
     function canCardPickUpAny(card, currentTable) {
-        if (card.rank === 'J') return currentTable.length > 0;
+        // Jack only picks up Numbers (<=10) and Jacks (11)
+        if (card.rank === 'J') {
+            return currentTable.some(c => c.value <= 11);
+        }
         if (card.rank === 'K') return currentTable.some(c => c.rank === 'K');
         if (card.rank === 'Q') return currentTable.some(c => c.rank === 'Q');
         
@@ -504,7 +506,11 @@
 
     function validateMove(card, selectedTableCards, allTableCards) {
         if (card.rank === 'J') {
-            if (allTableCards.length > 0) {
+            // JACK SWEEP CHECK:
+            // Jack collects all Nums (<=10) and Jacks (11).
+            // It does NOT collect K or Q.
+            const eligible = allTableCards.filter(c => c.value <= 11 && c.rank !== 'K' && c.rank !== 'Q');
+            if (eligible.length > 0) {
                 return { isValid: true, isPickup: true, special: 'JACK_SWEEP' };
             } else {
                 return { isValid: true, isPickup: false };
@@ -546,7 +552,6 @@
             
             container.innerHTML = ''; 
 
-            // Tight offset: 12px
             const OFFSET = 12; 
             
             const totalStackHeight = ((cards.length - 1) * OFFSET) + 84;
@@ -591,9 +596,18 @@
 
         if (v.isPickup) {
             if (v.special === 'JACK_SWEEP') {
-                captured = [card, ...table];
+                // Jack takes all eligible cards (Nums + Jacks)
+                const eligible = [];
+                const remaining = [];
+                table.forEach(c => {
+                    if (c.value <= 11 && c.rank !== 'K' && c.rank !== 'Q') eligible.push(c);
+                    else remaining.push(c);
+                });
+                
+                captured = [card, ...eligible];
                 playerPile.push(...captured);
-                table = [];
+                table = remaining;
+                
             } else {
                 selectedTableIndices.sort((a,b) => b-a);
                 selectedTableIndices.forEach(idx => {
@@ -640,6 +654,7 @@
 
     function checkSur(isPlayer, playedCard) {
         if (table.length === 0 && !lastRound) {
+            // Rule: Jack cleaning table is never a Sur
             if (playedCard.rank === 'J') {
                 showToast("Jack Clear");
             } else {
@@ -660,6 +675,11 @@
 
         if (move.isPickup) {
             const newTable = [];
+            // If it's a Jack sweep in code (simulated by targets)
+            // Note: calculateCPUMove returns specific targets for Jack too.
+            // But if logic differs, we can standardize.
+            // For now, move.targets is correct.
+            
             table.forEach(t => {
                 if (move.targets.includes(t)) captured.push(t);
                 else newTable.push(t);
@@ -732,8 +752,10 @@
 
         for (let card of cpuHand) {
             if (card.rank === 'J') {
-                if (table.length > 0) {
-                    possibleMoves.push({ card: card, isPickup: true, targets: [...table], score: 0 });
+                // Jack picks up Nums and Jacks
+                const targets = table.filter(c => c.value <= 11 && c.rank !== 'K' && c.rank !== 'Q');
+                if (targets.length > 0) {
+                    possibleMoves.push({ card: card, isPickup: true, targets: targets, score: 0 });
                 } else {
                      possibleMoves.push({ card: card, isPickup: false, score: -5 });
                 }
