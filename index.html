@@ -2,8 +2,14 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Pasur Card Game</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>Pasur</title>
+    
+    <link rel="icon" type="image/png" href="icon_2.PNG">
+    <link rel="apple-touch-icon" href="icon_2.PNG">
+
     <style>
         :root {
             --felt-green: #2d5e2e;
@@ -11,6 +17,7 @@
             --card-height: 84px;
             --card-radius: 6px;
             --highlight: #ffd700;
+            --safe-top: env(safe-area-inset-top, 20px);
         }
 
         body {
@@ -24,6 +31,8 @@
             overflow: hidden;
             user-select: none;
             -webkit-user-select: none;
+            padding-top: calc(var(--safe-top) + 10px); 
+            touch-action: none; /* Prevents browser scrolling/zooming to allow pure swipe detection */
         }
 
         /* --- Layout Containers --- */
@@ -51,7 +60,7 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            opacity: 0;
+            opacity: 0.3;
             transition: opacity 0.3s;
         }
         
@@ -86,12 +95,7 @@
             font-weight: bold;
             font-size: 10px;
             box-shadow: 0 1px 3px rgba(0,0,0,0.3);
-        }
-
-        .score-pill {
-            color: #ddd;
-            font-size: 10px;
-            margin-top: 4px;
+            margin-bottom: 2px;
         }
 
         /* --- Card Areas --- */
@@ -140,6 +144,7 @@
             cursor: pointer;
             transition: transform 0.2s, box-shadow 0.2s;
             position: relative;
+            -webkit-tap-highlight-color: transparent;
         }
 
         .card.red { color: #d40000; }
@@ -170,7 +175,13 @@
             justify-content: center;
             align-items: center;
             gap: 15px;
-            padding-bottom: 20px;
+            padding-bottom: calc(20px + env(safe-area-inset-bottom, 0px));
+            position: relative;
+        }
+
+        .btn-wrapper {
+            display: inline-block;
+            position: relative;
         }
 
         button {
@@ -184,6 +195,7 @@
             box-shadow: 0 4px 0 #bfa200;
             cursor: pointer;
             transition: all 0.1s;
+            min-width: 120px;
         }
         button:active {
             transform: translateY(3px);
@@ -193,7 +205,7 @@
             background: #999;
             box-shadow: none;
             color: #555;
-            cursor: not-allowed;
+            cursor: default;
             opacity: 0.5;
         }
 
@@ -232,7 +244,7 @@
 <body>
 
 <div id="game-board">
-    <div class="player-row">
+    <div class="player-row" style="margin-top: 10px;">
         <div class="turn-indicator" id="cpu-turn-icon">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#ffd700" stroke-width="2">
                 <rect x="2" y="2" width="20" height="20" rx="5"></rect>
@@ -245,7 +257,6 @@
         
         <div class="sur-area">
             <div id="cpu-sur-container"></div>
-            <div id="cpu-captured-count" class="score-pill">Cards: 0</div>
         </div>
     </div>
 
@@ -260,13 +271,14 @@
 
         <div class="sur-area">
             <div id="player-sur-container"></div>
-            <div id="player-captured-count" class="score-pill">Cards: 0</div>
         </div>
     </div>
 </div>
 
 <div id="controls">
-    <button id="btn-action" onclick="handleActionButton()">Play</button>
+    <div class="btn-wrapper" onclick="checkDisabledReason()">
+        <button id="btn-action" onclick="handleActionButton()">Play</button>
+    </div>
 </div>
 
 <div id="message-overlay">
@@ -291,12 +303,20 @@
     
     let isPlayerTurn = true;
     let lastRound = false; 
-    let lastTaker = null; // 'player' or 'cpu'
+    let lastTaker = null; 
 
     // Selection
     let selectedHandIndex = -1;
     let selectedTableIndices = [];
+    
+    // Logic Debug
+    let pickupPossibleForSelected = false;
 
+    // --- Swipe Detection Variables ---
+    let touchStartY = 0;
+    let touchStartTime = 0;
+
+    // --- Init ---
     function createDeck() {
         let d = [];
         for (let s of SUITS) {
@@ -330,16 +350,13 @@
         lastRound = false;
         lastTaker = null;
         
-        // Initial Table Deal (Ensure no Jacks)
         let validTable = false;
         while (!validTable) {
             let hasJack = false;
-            // Check top 4
             for(let i=0; i<4; i++) {
                 if (deck[i].rank === 'J') hasJack = true;
             }
             if (hasJack) {
-                // reshuffle simple
                  deck.sort(() => Math.random() - 0.5);
             } else {
                 validTable = true;
@@ -384,40 +401,39 @@
         }
     }
 
-    // Logic Helpers
+    // --- Core Logic ---
     function canCardPickUpAny(card, currentTable) {
         if (card.rank === 'K') return currentTable.some(c => c.rank === 'K');
         if (card.rank === 'Q') return currentTable.some(c => c.rank === 'Q');
         if (card.rank === 'J') return currentTable.some(c => c.rank === 'J' || c.value <= 10);
+        
         if (card.value <= 10) {
             const target = 11 - card.value;
             const nums = currentTable.filter(c => c.value <= 10);
-            return hasSubsetSum(nums.map(c => c.value), target);
+            const validNums = nums.filter(c => c.value <= target);
+            return hasSubsetSum(validNums.map(c => c.value), target);
         }
         return false;
     }
 
     function hasSubsetSum(numbers, target) {
-        if (target === 0) return true; 
+        if (target === 0) return true;
         if (numbers.length === 0) return false;
         const first = numbers[0];
         const rest = numbers.slice(1);
-        if (first <= target) {
-            if (hasSubsetSum(rest, target - first)) return true;
-        }
+        if (first > target) return hasSubsetSum(rest, target);
+        if (hasSubsetSum(rest, target - first)) return true;
         return hasSubsetSum(rest, target);
     }
 
     function validateMove(card, selectedTableCards, allTableCards) {
-        // Discard
         if (selectedTableCards.length === 0) {
             if (canCardPickUpAny(card, allTableCards)) {
-                return { isValid: false, reason: "Must pickup" };
+                return { isValid: false, reason: "Must Pick Up!" };
             }
             return { isValid: true, isPickup: false };
         }
 
-        // Pickup
         if (card.rank === 'K') {
             if (selectedTableCards.length === 1 && selectedTableCards[0].rank === 'K') return { isValid: true, isPickup: true };
             return { isValid: false };
@@ -427,7 +443,6 @@
             return { isValid: false };
         }
         if (card.rank === 'J') {
-            // Jack picks up ALL Jacks and Numbers
             const validSubset = selectedTableCards.every(c => c.rank === 'J' || c.value <= 10);
             if (!validSubset) return { isValid: false };
             return { isValid: true, isPickup: true, special: 'JACK_SWEEP' };
@@ -441,10 +456,10 @@
         return { isValid: false };
     }
 
-    // --- Action Execution ---
-
+    // --- Interaction ---
     function handleActionButton() {
-        if (!isPlayerTurn) return;
+        const btn = document.getElementById('btn-action');
+        if (btn.disabled || !isPlayerTurn) return;
         
         const card = playerHand[selectedHandIndex];
         let tableSubset = selectedTableIndices.map(i => table[i]);
@@ -485,12 +500,23 @@
         checkRoundOrTurnEnd();
     }
 
+    function checkDisabledReason() {
+        const btn = document.getElementById('btn-action');
+        if (!btn.disabled) return;
+        if (!isPlayerTurn) return;
+
+        if (selectedHandIndex === -1) {
+            showToast("Select a card");
+        } else if (pickupPossibleForSelected && selectedTableIndices.length === 0) {
+            showToast("Must Pick Up!");
+        } else {
+            if (selectedTableIndices.length > 0) showToast("Invalid Match");
+        }
+    }
+
     function checkSur(isPlayer, playedCard) {
-        // Rule: Sur only if table is empty AND not last round
-        // Exception: If played card is JACK, never Sur.
         if (table.length === 0 && !lastRound) {
             if (playedCard.rank === 'J') {
-                // Exception: Jack Cleared table -> No Sur
                 showToast("Jack Clear (No Sur)");
             } else {
                 if (isPlayer) playerSurs++; else cpuSurs++;
@@ -529,7 +555,6 @@
             if (deck.length > 0) {
                 setTimeout(() => dealRound(false), 1000);
             } else {
-                // End of Deck
                 if (table.length > 0) {
                     if (lastTaker === 'player') playerPile.push(...table);
                     else cpuPile.push(...table);
@@ -553,12 +578,15 @@
         const btn = document.getElementById('btn-action');
         btn.disabled = true;
         btn.textContent = "Play";
+        pickupPossibleForSelected = false;
         
         if (selectedHandIndex === -1) return;
 
         const card = playerHand[selectedHandIndex];
         const tableSubset = selectedTableIndices.map(i => table[i]);
         
+        pickupPossibleForSelected = canCardPickUpAny(card, table);
+
         const validation = validateMove(card, tableSubset, table);
         
         if (validation.isValid) {
@@ -567,7 +595,6 @@
         }
     }
 
-    // AI Logic
     function calculateCPUMove() {
         let possibleMoves = [];
 
@@ -611,7 +638,6 @@
                     if (c.rank === '10' && c.suit === '♦') m.score += 10;
                     if (c.rank === '2' && c.suit === '♣') m.score += 5;
                 });
-                // Sur check logic for AI
                 if (table.length === m.targets.length && !lastRound && m.card.rank !== 'J') {
                     m.score += 50; 
                 }
@@ -620,6 +646,12 @@
                     m.score -= 5; 
                 }
             }
+        });
+
+        const cardsWithPickup = new Set(possibleMoves.filter(m => m.isPickup).map(m => m.card));
+        possibleMoves = possibleMoves.filter(m => {
+            if (!m.isPickup && cardsWithPickup.has(m.card)) return false;
+            return true;
         });
 
         possibleMoves.sort((a,b) => b.score - a.score);
@@ -684,26 +716,32 @@
     }
     
     function showToast(msg) {
+        const existing = document.getElementById('toast-msg');
+        if (existing) existing.remove();
+
         const d = document.createElement('div');
+        d.id = 'toast-msg';
         d.textContent = msg;
         d.style.position = 'absolute';
         d.style.top = '50%';
         d.style.left = '50%';
         d.style.transform = 'translate(-50%, -50%)';
-        d.style.background = 'rgba(255, 215, 0, 0.9)';
+        d.style.background = 'rgba(255, 215, 0, 0.95)';
         d.style.color = '#000';
-        d.style.padding = '10px 25px';
+        d.style.padding = '12px 25px';
         d.style.borderRadius = '30px';
         d.style.fontWeight = 'bold';
         d.style.zIndex = 200;
-        d.style.animation = 'fadeout 1.5s forwards';
         d.style.pointerEvents = 'none';
+        d.style.whiteSpace = 'nowrap';
+        d.style.boxShadow = '0 5px 15px rgba(0,0,0,0.5)';
+        d.style.animation = 'fadeout 1.5s forwards';
+        
         document.body.appendChild(d);
-        setTimeout(() => d.remove(), 1500);
+        setTimeout(() => { if(d.parentNode) d.remove(); }, 1500);
     }
 
     function updateUI() {
-        // Update Sur Counts
         const pSurCont = document.getElementById('player-sur-container');
         const cSurCont = document.getElementById('cpu-sur-container');
         
@@ -723,10 +761,6 @@
             cSurCont.appendChild(sp);
         }
 
-        document.getElementById('player-captured-count').textContent = `Cards: ${playerPile.length}`;
-        document.getElementById('cpu-captured-count').textContent = `Cards: ${cpuPile.length}`;
-
-        // Table
         const tableDiv = document.getElementById('table-area');
         tableDiv.innerHTML = '';
         table.forEach((card, idx) => {
@@ -736,7 +770,6 @@
             tableDiv.appendChild(el);
         });
 
-        // Player Hand
         const pHandDiv = document.getElementById('player-hand');
         pHandDiv.innerHTML = '';
         playerHand.forEach((card, idx) => {
@@ -746,7 +779,6 @@
             pHandDiv.appendChild(el);
         });
 
-        // CPU Hand
         const cHandDiv = document.getElementById('opponent-hand');
         cHandDiv.innerHTML = '';
         cpuHand.forEach(() => {
@@ -781,12 +813,35 @@
 
     function toggleTableSelection(idx) {
         if (!isPlayerTurn) return;
-        if (selectedHandIndex === -1) return; 
+        if (selectedHandIndex === -1) {
+            showToast("Select a card first");
+            return; 
+        }
         const pos = selectedTableIndices.indexOf(idx);
         if (pos >= 0) selectedTableIndices.splice(pos, 1);
         else selectedTableIndices.push(idx);
         updateUI();
     }
+
+    // --- Gesture Listeners ---
+    document.addEventListener('touchstart', e => {
+        touchStartY = e.changedTouches[0].screenY;
+        touchStartTime = new Date().getTime();
+    }, {passive: false});
+
+    document.addEventListener('touchend', e => {
+        const touchEndY = e.changedTouches[0].screenY;
+        const endTime = new Date().getTime();
+        
+        const distance = touchStartY - touchEndY; // Positive = UP
+        const duration = endTime - touchStartTime;
+
+        // Threshold: >150px dist, <400ms duration
+        if (distance > 150 && duration < 400) {
+            showToast("Resetting Game...");
+            setTimeout(initGame, 500);
+        }
+    }, {passive: false});
 
     const styleSheet = document.createElement("style");
     styleSheet.innerText = `
