@@ -41,7 +41,8 @@
             display: flex;
             flex-direction: column;
             justify-content: center;
-            gap: 70px; 
+            /* Large gap to separate hands from table */
+            gap: 60px; 
             padding: 10px;
             position: relative;
         }
@@ -50,17 +51,26 @@
         .player-row {
             position: relative;
             width: 100%;
-            height: 120px; 
+            height: 160px; /* Increased height to fit counters above/below */
             display: flex;
             justify-content: center; 
             align-items: center;
         }
 
         /* --- Side Elements --- */
-        
-        .turn-indicator {
+        .left-panel {
             position: absolute;
-            left: 20px;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            z-index: 10;
+        }
+
+        .turn-indicator {
             width: 40px;
             height: 40px;
             display: flex;
@@ -68,7 +78,6 @@
             align-items: center;
             opacity: 0.3;
             transition: opacity 0.3s;
-            z-index: 10;
         }
         
         .turn-indicator.active {
@@ -84,6 +93,15 @@
             animation: pulse 1.5s infinite;
         }
 
+        .score-tally {
+            font-size: 11px;
+            font-weight: bold;
+            color: rgba(255,255,255,0.7);
+            background: rgba(0,0,0,0.3);
+            padding: 4px 8px;
+            border-radius: 10px;
+        }
+
         /* Capture Showcase Anchor: Right 10px */
         .stack-anchor {
             position: absolute;
@@ -97,13 +115,13 @@
             transform: translateY(-50%);
         }
 
-        /* --- Center Column (Hand + Surs) --- */
+        /* --- Center Column (Hand + Surs + Counters) --- */
         .hand-column {
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            gap: 8px; 
+            gap: 6px; 
             position: relative;
             z-index: 5;
         }
@@ -115,6 +133,28 @@
             align-items: center;
             height: var(--card-height);
             position: relative;
+        }
+
+        /* --- Counters (Clubs, Deck) --- */
+        .info-pill {
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: #ddd;
+            padding: 2px 10px;
+            border-radius: 10px;
+            font-size: 10px;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            white-space: nowrap;
+        }
+
+        .deck-counter {
+            position: absolute;
+            top: -25px; /* Above CPU Hand */
+            background: rgba(0, 0, 0, 0.6);
+            border-color: rgba(255, 215, 0, 0.4);
+            color: #ffd700;
         }
 
         /* --- Sur Areas --- */
@@ -172,24 +212,6 @@
             gap: 8px;
             position: relative; 
             z-index: 1;
-        }
-
-        /* --- Deck Counter --- */
-        #deck-counter-pill {
-            position: absolute;
-            top: -50px; 
-            left: 50%;
-            transform: translateX(-50%);
-            background: rgba(0, 0, 0, 0.3);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            padding: 4px 12px;
-            border-radius: 12px;
-            font-size: 11px;
-            color: rgba(255, 255, 255, 0.8);
-            letter-spacing: 0.5px;
-            text-transform: uppercase;
-            z-index: 5;
-            pointer-events: none;
         }
 
         /* --- Cards --- */
@@ -252,7 +274,7 @@
         .btn-wrapper {
             display: inline-block;
             position: relative;
-            margin-top: -10px; 
+            margin-top: -15px; /* Lift button higher */
         }
 
         button {
@@ -314,33 +336,43 @@
 
 <div id="game-board">
     <div class="player-row">
-        <div class="turn-indicator" id="cpu-turn-icon">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#ffd700" stroke-width="2">
-                <rect x="2" y="2" width="20" height="20" rx="5"></rect>
-                <circle cx="12" cy="12" r="3"></circle>
-                <line x1="12" y1="2" x2="12" y2="6"></line>
-            </svg>
+        <div class="left-panel">
+            <div class="turn-indicator" id="cpu-turn-icon">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#ffd700" stroke-width="2">
+                    <rect x="2" y="2" width="20" height="20" rx="5"></rect>
+                    <circle cx="12" cy="12" r="3"></circle>
+                    <line x1="12" y1="2" x2="12" y2="6"></line>
+                </svg>
+            </div>
+            <div class="score-tally" id="cpu-total-score">Score: 0</div>
         </div>
         
         <div class="hand-column">
+            <div id="deck-counter-pill" class="info-pill deck-counter">Deck: 52</div>
+
             <div id="cpu-sur-container" class="sur-container"></div>
             
             <div id="opponent-hand" class="hand-area"></div>
+
+            <div id="cpu-club-counter" class="info-pill">Clubs: 0</div>
         </div>
 
         <div id="cpu-stack-anchor" class="stack-anchor"></div>
     </div>
 
-    <div id="table-area">
-        <div id="deck-counter-pill">Deck: 52</div>
-    </div>
+    <div id="table-area"></div>
 
     <div class="player-row">
-        <div class="turn-indicator" id="player-turn-icon">
-             <div class="turn-dot"></div>
+        <div class="left-panel">
+            <div class="turn-indicator" id="player-turn-icon">
+                 <div class="turn-dot"></div>
+            </div>
+            <div class="score-tally" id="player-total-score">Score: 0</div>
         </div>
 
         <div class="hand-column">
+            <div id="player-club-counter" class="info-pill">Clubs: 0</div>
+
             <div id="player-hand" class="hand-area"></div>
             
             <div id="player-sur-container" class="sur-container"></div>
@@ -359,14 +391,14 @@
 <div id="message-overlay">
     <h2 id="msg-title" style="margin-top:0">Round Over</h2>
     <div id="msg-body" style="margin: 20px 0; line-height: 1.5; color: #ccc;"></div>
-    <button onclick="closeOverlay()">Next Round</button>
+    <button onclick="nextRound()">Next Round</button>
 </div>
 
 <script>
     const SUITS = ['♣', '♦', '♥', '♠'];
     const RANKS = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K'];
     
-    // State
+    // Game State
     let deck = [];
     let table = [];
     let playerHand = [];
@@ -375,6 +407,10 @@
     let cpuPile = [];
     let playerSurs = 0;
     let cpuSurs = 0;
+    
+    // Persistent Scores
+    let playerTotalScore = 0;
+    let cpuTotalScore = 0;
     
     let isPlayerTurn = true;
     let lastRound = false; 
@@ -416,6 +452,7 @@
     }
 
     function initGame() {
+        // Reset Round State
         deck = createDeck();
         playerPile = [];
         cpuPile = [];
@@ -439,6 +476,11 @@
         }
         
         dealRound(true);
+    }
+
+    function nextRound() {
+        document.getElementById('message-overlay').style.display = 'none';
+        initGame();
     }
 
     function dealRound(isFirst) {
@@ -478,10 +520,7 @@
 
     // --- Core Logic ---
     function canCardPickUpAny(card, currentTable) {
-        // Jack only picks up Numbers (<=10) and Jacks (11)
-        if (card.rank === 'J') {
-            return currentTable.some(c => c.value <= 11);
-        }
+        if (card.rank === 'J') return currentTable.some(c => c.value <= 11 && c.rank !== 'K' && c.rank !== 'Q');
         if (card.rank === 'K') return currentTable.some(c => c.rank === 'K');
         if (card.rank === 'Q') return currentTable.some(c => c.rank === 'Q');
         
@@ -506,9 +545,6 @@
 
     function validateMove(card, selectedTableCards, allTableCards) {
         if (card.rank === 'J') {
-            // JACK SWEEP CHECK:
-            // Jack collects all Nums (<=10) and Jacks (11).
-            // It does NOT collect K or Q.
             const eligible = allTableCards.filter(c => c.value <= 11 && c.rank !== 'K' && c.rank !== 'Q');
             if (eligible.length > 0) {
                 return { isValid: true, isPickup: true, special: 'JACK_SWEEP' };
@@ -549,22 +585,18 @@
             const surId = anchorId === 'cpu-stack-anchor' ? 'cpu-sur-container' : 'player-sur-container';
             
             document.getElementById(surId).classList.add('hidden');
-            
             container.innerHTML = ''; 
 
             const OFFSET = 12; 
-            
             const totalStackHeight = ((cards.length - 1) * OFFSET) + 84;
             const shiftUp = (totalStackHeight - 84) / 2;
 
             cards.forEach((card, i) => {
                 const el = createCardEl(card);
                 el.classList.add('stacked-card');
-                
                 const topPos = -shiftUp + (i * OFFSET);
                 el.style.top = topPos + 'px'; 
                 el.style.zIndex = 10 + i; 
-                
                 container.appendChild(el);
             });
 
@@ -596,18 +628,15 @@
 
         if (v.isPickup) {
             if (v.special === 'JACK_SWEEP') {
-                // Jack takes all eligible cards (Nums + Jacks)
                 const eligible = [];
                 const remaining = [];
                 table.forEach(c => {
                     if (c.value <= 11 && c.rank !== 'K' && c.rank !== 'Q') eligible.push(c);
                     else remaining.push(c);
                 });
-                
                 captured = [card, ...eligible];
                 playerPile.push(...captured);
                 table = remaining;
-                
             } else {
                 selectedTableIndices.sort((a,b) => b-a);
                 selectedTableIndices.forEach(idx => {
@@ -618,7 +647,6 @@
                 playerPile.push(...captured);
             }
             lastTaker = 'player';
-            
             selectedHandIndex = -1;
             selectedTableIndices = [];
             updateUI(); 
@@ -654,7 +682,6 @@
 
     function checkSur(isPlayer, playedCard) {
         if (table.length === 0 && !lastRound) {
-            // Rule: Jack cleaning table is never a Sur
             if (playedCard.rank === 'J') {
                 showToast("Jack Clear");
             } else {
@@ -675,11 +702,6 @@
 
         if (move.isPickup) {
             const newTable = [];
-            // If it's a Jack sweep in code (simulated by targets)
-            // Note: calculateCPUMove returns specific targets for Jack too.
-            // But if logic differs, we can standardize.
-            // For now, move.targets is correct.
-            
             table.forEach(t => {
                 if (move.targets.includes(t)) captured.push(t);
                 else newTable.push(t);
@@ -752,7 +774,6 @@
 
         for (let card of cpuHand) {
             if (card.rank === 'J') {
-                // Jack picks up Nums and Jacks
                 const targets = table.filter(c => c.value <= 11 && c.rank !== 'K' && c.rank !== 'Q');
                 if (targets.length > 0) {
                     possibleMoves.push({ card: card, isPickup: true, targets: targets, score: 0 });
@@ -835,11 +856,11 @@
         const pClubs = playerPile.filter(c => c.suit === '♣').length;
         const cClubs = cpuPile.filter(c => c.suit === '♣').length;
         
-        let pPoints = 0;
-        let cPoints = 0;
+        let roundP = 0;
+        let roundC = 0;
 
-        if (pClubs > cClubs) pPoints += 7;
-        else if (cClubs > pClubs) cPoints += 7;
+        if (pClubs > cClubs) roundP += 7;
+        else if (cClubs > pClubs) roundC += 7;
 
         [playerPile, cpuPile].forEach((pile, idx) => {
             let pts = 0;
@@ -849,37 +870,35 @@
                 if (c.rank === '10' && c.suit === '♦') pts += 3;
                 if (c.rank === '2' && c.suit === '♣') pts += 2;
             });
-            if (idx === 0) pPoints += pts; else cPoints += pts;
+            if (idx === 0) roundP += pts; else roundC += pts;
         });
 
-        pPoints += (playerSurs * 5);
-        cPoints += (cpuSurs * 5);
+        roundP += (playerSurs * 5);
+        roundC += (cpuSurs * 5);
+
+        // Update Totals
+        playerTotalScore += roundP;
+        cpuTotalScore += roundC;
 
         const body = document.getElementById('msg-body');
-        body.innerHTML = `
-            <div style="font-size:1.5rem; color:white; margin-bottom:10px;">${pPoints} - ${cPoints}</div>
-            <div style="font-size:0.9rem; text-align:left; display:inline-block; line-height:1.6;">
-            <strong>Your Stats:</strong><br>
-            Clubs: ${pClubs} <br>
-            Surs: ${playerSurs} (x5)<br>
-            Points (A, J, 10♦, 2♣): ${playerPile.reduce((acc, c) => {
-                if(c.rank=='A'||c.rank=='J') return acc+1;
-                if(c.rank=='10'&&c.suit=='♦') return acc+3;
-                if(c.rank=='2'&&c.suit=='♣') return acc+2;
-                return acc;
-            }, 0)}
-            <br><br>
-            <strong>CPU Stats:</strong><br>
-            Clubs: ${cClubs} <br>
-            Surs: ${cpuSurs} (x5)
-            </div>
+        let html = `
+            <div style="font-size:1.2rem; color:white; margin-bottom:10px;">Round Points</div>
+            <div style="font-size:1rem; margin-bottom:10px;">You: +${roundP} | CPU: +${roundC}</div>
+            <hr style="border:0; border-top:1px solid #555; margin:10px 0;">
+            <div style="font-size:1.5rem; color:#ffd700; font-weight:bold;">Total Score</div>
+            <div style="font-size:1.2rem;">You: ${playerTotalScore} - CPU: ${cpuTotalScore}</div>
         `;
-        document.getElementById('message-overlay').style.display = 'block';
-    }
 
-    function closeOverlay() {
-        document.getElementById('message-overlay').style.display = 'none';
-        initGame();
+        if (playerTotalScore >= 62 || cpuTotalScore >= 62) {
+            const winner = playerTotalScore > cpuTotalScore ? "YOU WIN!" : (cpuTotalScore > playerTotalScore ? "CPU WINS!" : "DRAW!");
+            html += `<div style="margin-top:20px; font-size:1.8rem; color:#00e5ff; font-weight:bold;">${winner}</div>`;
+            // Reset for next game
+            playerTotalScore = 0;
+            cpuTotalScore = 0;
+        }
+
+        body.innerHTML = html;
+        document.getElementById('message-overlay').style.display = 'block';
     }
     
     function showToast(msg) {
@@ -903,7 +922,6 @@
         d.style.whiteSpace = 'nowrap';
         d.style.boxShadow = '0 5px 15px rgba(0,0,0,0.5)';
         d.style.animation = 'fadeout 1.5s forwards';
-        
         document.body.appendChild(d);
         setTimeout(() => { if(d.parentNode) d.remove(); }, 1500);
     }
@@ -928,14 +946,17 @@
             cSurCont.appendChild(sp);
         }
 
+        // Update Counters
         document.getElementById('deck-counter-pill').textContent = `Deck: ${deck.length}`;
+        document.getElementById('player-club-counter').textContent = `Clubs: ${playerPile.filter(c => c.suit === '♣').length}`;
+        document.getElementById('cpu-club-counter').textContent = `Clubs: ${cpuPile.filter(c => c.suit === '♣').length}`;
+        
+        // Update Total Scores
+        document.getElementById('player-total-score').textContent = `Score: ${playerTotalScore}`;
+        document.getElementById('cpu-total-score').textContent = `Score: ${cpuTotalScore}`;
 
         const tableDiv = document.getElementById('table-area');
-        // Clear children but avoid removing the pill
-        Array.from(tableDiv.children).forEach(child => {
-            if (child.id !== 'deck-counter-pill') child.remove();
-        });
-
+        tableDiv.innerHTML = ''; // Clean table
         table.forEach((card, idx) => {
             const el = createCardEl(card);
             el.onclick = () => toggleTableSelection(idx);
@@ -1004,11 +1025,7 @@
     document.addEventListener('touchend', e => {
         const touchEndY = e.changedTouches[0].screenY;
         const endTime = new Date().getTime();
-        
-        const distance = touchStartY - touchEndY; // Positive = UP
-        const duration = endTime - touchStartTime;
-
-        if (distance > 150 && duration < 400) {
+        if (touchStartY - touchEndY > 150 && endTime - touchStartTime < 400) {
             location.reload();
         }
     }, {passive: false});
