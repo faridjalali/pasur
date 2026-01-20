@@ -41,7 +41,7 @@
             display: flex;
             flex-direction: column;
             justify-content: center;
-            gap: 70px; /* Generous gap between hands and table */
+            gap: 70px; 
             padding: 10px;
             position: relative;
         }
@@ -50,13 +50,13 @@
         .player-row {
             position: relative;
             width: 100%;
-            height: 120px; /* Fixed height to contain surs + cards */
+            height: 120px; 
             display: flex;
-            justify-content: center; /* Centers the hand column */
+            justify-content: center; 
             align-items: center;
         }
 
-        /* --- Side Elements (Absolute Positioning) --- */
+        /* --- Side Elements --- */
         
         /* Turn Indicator: Static Left */
         .turn-indicator {
@@ -85,16 +85,15 @@
             animation: pulse 1.5s infinite;
         }
 
-        /* Capture Showcase Anchor: Static Right */
+        /* Capture Showcase Anchor: Moved 25px Right (from 20px to -5px) */
         .stack-anchor {
             position: absolute;
-            right: 20px; /* Fixed margin from right side of screen */
+            right: -5px; /* Pushed to the edge to maximize gap from center stack */
             width: var(--card-width);
             height: var(--card-height);
             z-index: 999;
             pointer-events: none;
             overflow: visible; 
-            /* Vertically centered in the row */
             top: 50%;
             transform: translateY(-50%);
         }
@@ -547,10 +546,9 @@
             
             container.innerHTML = ''; 
 
-            // Tight offset: 12px (approx 14% of 84px card height)
+            // Tight offset: 12px
             const OFFSET = 12; 
             
-            // Re-center calculation
             const totalStackHeight = ((cards.length - 1) * OFFSET) + 84;
             const shiftUp = (totalStackHeight - 84) / 2;
 
