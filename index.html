@@ -74,30 +74,32 @@
             z-index: 1;
         }
 
-        /* --- Capture Showcase (The vertical stack) --- */
+        /* --- Capture Showcase (Compact Stack) --- */
         #capture-showcase {
             position: absolute;
             top: 10px;
-            bottom: 10px;
+            /* Allow height to grow downwards, but stay within container */
+            height: auto;
             width: var(--card-width);
             pointer-events: none;
-            z-index: 20;
-            display: none; /* Hidden by default */
+            z-index: 50;
+            display: none; 
         }
         
         #capture-showcase.left {
-            left: 15px;
+            left: 10px;
         }
         
         #capture-showcase.right {
-            right: 15px;
+            right: 10px;
         }
 
         .showcase-card {
             position: absolute;
             left: 0;
-            box-shadow: -2px 2px 5px rgba(0,0,0,0.4);
-            transition: transform 0.3s ease-out;
+            box-shadow: 0px -2px 6px rgba(0,0,0,0.3); /* Shadow upwards for stacking effect */
+            transition: all 0.2s ease-out;
+            transform-origin: top center;
         }
 
         /* --- Deck Counter --- */
@@ -516,21 +518,26 @@
         return new Promise(resolve => {
             const showcase = document.getElementById('capture-showcase');
             showcase.innerHTML = '';
-            showcase.className = side; // Apply 'left' or 'right' class
+            showcase.className = side; 
             showcase.style.display = 'block';
 
-            // Stack cards vertically
+            // Stack cards vertically and tightly
             cards.forEach((card, i) => {
                 const el = createCardEl(card);
                 el.classList.add('showcase-card');
-                // Stagger them vertically
-                el.style.top = (i * 25) + 'px'; 
+                // Very compact offset (18px) to show index
+                el.style.top = (i * 18) + 'px'; 
+                // Ensure correct layering (higher index on top of stack visually? 
+                // No, standard stack: 0 is bottom, N is top.
+                // But we want to see indices. 
+                // If 0 is at top: 0px. 1 is at top: 18px. 
+                // We want 1 to cover the body of 0.
+                el.style.zIndex = i + 50; 
                 showcase.appendChild(el);
             });
 
-            // Pause
             isPaused = true;
-            updateUI(); // Disable buttons via checkPossibleMoves inside updateUI
+            updateUI(); 
 
             setTimeout(() => {
                 showcase.style.display = 'none';
@@ -571,13 +578,12 @@
             }
             lastTaker = 'player';
             
-            // UI Update logic
             selectedHandIndex = -1;
             selectedTableIndices = [];
-            updateUI(); // Refresh board (cards gone)
+            updateUI(); 
             
             checkSur(true, card); 
-            await showCaptureAnim(captured, 'right'); // Wait for anim
+            await showCaptureAnim(captured, 'right'); 
             
         } else {
             table.push(card);
@@ -651,7 +657,6 @@
     function checkRoundOrTurnEnd() {
         if (playerHand.length === 0 && cpuHand.length === 0) {
             if (deck.length > 0) {
-                // Ensure paused delay doesn't conflict
                 setTimeout(() => dealRound(false), 500);
             } else {
                 if (table.length > 0) {
@@ -679,7 +684,7 @@
         btn.textContent = "Play";
         pickupPossibleForSelected = false;
         
-        if (isPaused || !isPlayerTurn) return; // Explicitly disable if paused
+        if (isPaused || !isPlayerTurn) return; 
         if (selectedHandIndex === -1) return;
 
         const card = playerHand[selectedHandIndex];
@@ -781,32 +786,42 @@
         const pClubs = playerPile.filter(c => c.suit === '♣').length;
         const cClubs = cpuPile.filter(c => c.suit === '♣').length;
         
-        if (pClubs > cClubs) pScore += 7;
-        else if (cClubs > pClubs) cScore += 7;
+        let pPoints = 0;
+        let cPoints = 0;
 
+        // Clubs Majority
+        if (pClubs > cClubs) pPoints += 7;
+        else if (cClubs > pClubs) cPoints += 7;
+
+        // Specific Card Points
         [playerPile, cpuPile].forEach((pile, idx) => {
-            let score = 0;
+            let pts = 0;
             pile.forEach(c => {
-                if (c.rank === 'A') score += 1;
-                if (c.rank === 'J') score += 1;
-                if (c.rank === '10' && c.suit === '♦') score += 3;
-                if (c.rank === '2' && c.suit === '♣') score += 2;
+                if (c.rank === 'A') pts += 1;
+                if (c.rank === 'J') pts += 1;
+                if (c.rank === '10' && c.suit === '♦') pts += 3;
+                if (c.rank === '2' && c.suit === '♣') pts += 2;
             });
-            if (idx === 0) pScore += score; else cScore += score;
+            if (idx === 0) pPoints += pts; else cPoints += pts;
         });
 
-        pScore += (playerSurs * 5);
-        cScore += (cpuSurs * 5);
+        // Sur Points
+        pPoints += (playerSurs * 5);
+        cPoints += (cpuSurs * 5);
 
         const body = document.getElementById('msg-body');
         body.innerHTML = `
-            <div style="font-size:1.5rem; color:white; margin-bottom:10px;">${pScore} - ${cScore}</div>
-            <div style="font-size:0.9rem; text-align:left; display:inline-block;">
+            <div style="font-size:1.5rem; color:white; margin-bottom:10px;">${pPoints} - ${cPoints}</div>
+            <div style="font-size:0.9rem; text-align:left; display:inline-block; line-height:1.6;">
             <strong>Your Stats:</strong><br>
             Clubs: ${pClubs} <br>
             Surs: ${playerSurs} (x5)<br>
-            Aces/Jacks: ${playerPile.filter(c=>'AJ'.includes(c.rank)).length}<br>
-            10♦ / 2♣: ${playerPile.filter(c=>(c.rank=='10'&&c.suit=='♦')||(c.rank=='2'&&c.suit=='♣')).length}
+            Points (A, J, 10♦, 2♣): ${playerPile.reduce((acc, c) => {
+                if(c.rank=='A'||c.rank=='J') return acc+1;
+                if(c.rank=='10'&&c.suit=='♦') return acc+3;
+                if(c.rank=='2'&&c.suit=='♣') return acc+2;
+                return acc;
+            }, 0)}
             <br><br>
             <strong>CPU Stats:</strong><br>
             Clubs: ${cClubs} <br>
@@ -870,7 +885,6 @@
         document.getElementById('deck-counter-pill').textContent = `Deck: ${deck.length}`;
 
         const tableDiv = document.getElementById('table-area');
-        // Keep non-card elements (pill, showcase)
         const staticEls = Array.from(tableDiv.children).filter(el => 
             el.id === 'deck-counter-pill' || el.id === 'capture-showcase'
         );
