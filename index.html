@@ -59,7 +59,7 @@
         /* --- Side Elements --- */
         .left-panel {
             position: absolute;
-            left: 5px; /* Changed from 0 to 5px */
+            left: 5px; 
             top: 50%;
             transform: translateY(-50%);
             display: flex;
@@ -93,13 +93,21 @@
             animation: pulse 1.5s infinite;
         }
 
+        /* SCORE PILL (Updated Style) */
         .score-tally {
-            font-size: 11px;
-            font-weight: bold;
-            color: rgba(255,255,255,0.7);
-            background: rgba(0,0,0,0.3);
-            padding: 4px 8px;
+            /* Matches .info-pill style */
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: #ddd;
+            padding: 5px 4px;
             border-radius: 10px;
+            font-size: 9px;
+            font-weight: bold;
+            text-align: center;
+            min-width: 45px;
+            line-height: 1.2;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
 
         /* Capture Showcase Anchor */
@@ -408,7 +416,9 @@
                     <line x1="12" y1="2" x2="12" y2="6"></line>
                 </svg>
             </div>
-            <div class="score-tally" id="cpu-total-score">Score: 0</div>
+            <div class="score-tally" id="cpu-total-score">
+                SCORE<div style="font-size:13px; color:#fff; margin-top:1px;">0</div>
+            </div>
         </div>
         
         <div class="hand-column">
@@ -428,7 +438,9 @@
             <div class="turn-indicator" id="player-turn-icon">
                  <div class="turn-dot"></div>
             </div>
-            <div class="score-tally" id="player-total-score">Score: 0</div>
+            <div class="score-tally" id="player-total-score">
+                SCORE<div style="font-size:13px; color:#fff; margin-top:1px;">0</div>
+            </div>
         </div>
 
         <div class="hand-column">
@@ -628,8 +640,9 @@
         // Update Totals
         playerTotalScore += pRoundPoints;
         cpuTotalScore += cRoundPoints;
-        document.getElementById('player-total-score').textContent = `Score: ${playerTotalScore}`;
-        document.getElementById('cpu-total-score').textContent = `Score: ${cpuTotalScore}`;
+        
+        // Update Side Pills
+        updateUI();
 
         // Build Modal HTML
         const body = document.getElementById('msg-body');
@@ -869,7 +882,7 @@
                 showToast("Jack Clear");
             } else {
                 if (isPlayer) playerSurs++; else cpuSurs++;
-                showToast("SUR"); // Removed exclamation
+                showToast("SUR"); 
             }
         }
     }
@@ -1085,8 +1098,9 @@
         document.getElementById('player-club-counter').textContent = `Clubs: ${playerPile.filter(c => c.suit === '♣').length}`;
         document.getElementById('cpu-club-counter').textContent = `Clubs: ${cpuPile.filter(c => c.suit === '♣').length}`;
         
-        document.getElementById('player-total-score').textContent = `Score: ${playerTotalScore}`;
-        document.getElementById('cpu-total-score').textContent = `Score: ${cpuTotalScore}`;
+        const scoreHTML = (score) => `SCORE<div style="font-size:13px; color:#fff; margin-top:1px;">${score}</div>`;
+        document.getElementById('player-total-score').innerHTML = scoreHTML(playerTotalScore);
+        document.getElementById('cpu-total-score').innerHTML = scoreHTML(cpuTotalScore);
 
         const tableDiv = document.getElementById('table-area');
         tableDiv.innerHTML = ''; 
