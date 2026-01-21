@@ -466,7 +466,7 @@
 </div>
 
 <div id="message-overlay">
-    <h2 id="msg-title" style="margin-top:0; margin-bottom:15px; color:white;"></h2>
+    <h2 id="msg-title" style="margin-top:0; margin-bottom:15px; color:white; display:none;"></h2>
     <div id="msg-body" style="text-align:left;"></div>
     <button id="msg-btn" onclick="nextRound()" style="margin-top:15px; width:100%;">Next Round</button>
 </div>
@@ -550,7 +550,8 @@
 
     function nextRound() {
         const btn = document.getElementById('msg-btn');
-        if (btn.textContent === "New Game") {
+        // Check if button text indicates starting over
+        if (btn.textContent.includes("Start over")) {
             playerTotalScore = 0;
             cpuTotalScore = 0;
         }
@@ -664,7 +665,6 @@
             return `<div class="mini-cards-container">${cards.map(renderMini).join('')}</div>`;
         };
         
-        // Helper to draw Visual Surs
         const renderSurPills = (count) => {
             let s = '';
             for(let i=0; i<count; i++) s += '<div class="sur-pill">SUR</div>';
@@ -716,18 +716,25 @@
         const title = document.getElementById('msg-title');
         
         if (playerTotalScore >= 62 || cpuTotalScore >= 62) {
-            title.textContent = "GAME OVER";
-            title.style.display = "block";
-            title.style.color = "#ffd700";
-            
-            const winner = playerTotalScore > cpuTotalScore ? "YOU WIN!" : (cpuTotalScore > playerTotalScore ? "CPU WINS!" : "DRAW!");
-            html += `<div style="margin-top:20px; text-align:center; font-size:1.5rem; color:#00e5ff; font-weight:bold;">${winner}</div>`;
-            html += `<div style="text-align:center; font-size:1rem; color:#fff;">Final: ${playerTotalScore} - ${cpuTotalScore}</div>`;
-            
-            btn.textContent = "New Game";
-        } else {
-            // Remove "Round Complete" title per request, unless game over
+            // Remove title per instruction ("Delete GAME OVER text") - we effectively leave it hidden
             title.style.display = "none";
+            
+            // Add Game Total Row
+            html += `<div class="score-line" style="margin-top:10px; font-size:1.2rem; border-top:1px solid #777; padding-top:10px;">`;
+            html += `<span>Game Total:</span>`;
+            html += `<span>You: <b style="color:#00e5ff">${playerTotalScore}</b>  CPU: <b style="color:#00e5ff">${cpuTotalScore}</b></span>`;
+            html += `</div>`;
+            
+            if (playerTotalScore > cpuTotalScore) {
+                btn.textContent = "You won. Start over?";
+            } else if (cpuTotalScore > playerTotalScore) {
+                btn.textContent = "CPU won. Start over?";
+            } else {
+                btn.textContent = "Draw. Start over?";
+            }
+        } else {
+            // Round Over (Intermediate)
+            title.style.display = "none"; // "Remove text Round Complete"
             btn.textContent = "Next Round";
         }
 
